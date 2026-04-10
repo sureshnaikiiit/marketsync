@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useUpstox, DEFAULT_INSTRUMENT_KEYS, INSTRUMENT_LABEL, NSE_INSTRUMENTS } from '@/lib/upstox-tick-data';
 import type { UpstoxTick } from '@/lib/upstox-tick-data';
 import MiniChart from './MiniChart';
-import CandleChartModal from './CandleChartModal';
+import CandleChartModal from './CandleChartModalV2';
 
 const NAME_MAP: Record<string, string> = Object.fromEntries(
   NSE_INSTRUMENTS.map(i => [i.key, i.name])
@@ -94,7 +94,8 @@ interface SelectedInstrument {
 
 export default function IndiaWatchList() {
   const { ticks, isAuthenticated, status, subscribe, getHistory } = useUpstox();
-  const prevLtps = useRef<Record<string, number>>({});
+  const prevLtps    = useRef<Record<string, number>>({});
+  const lastChecked = useRef<Record<string, number>>({});
   const [selected, setSelected] = useState<SelectedInstrument | null>(null);
 
   useEffect(() => {
@@ -102,6 +103,23 @@ export default function IndiaWatchList() {
       subscribe(DEFAULT_INSTRUMENT_KEYS, 'full');
     }
   }, [isAuthenticated, status, subscribe]);
+
+  // ── Alert check on every tick ────────────────────────────────────────────
+  useEffect(() => {
+    for (const key of DEFAULT_INSTRUMENT_KEYS) {
+      const tick = ticks[key];
+      if (!tick) continue;
+      const price = tick.ltp;
+      const prev  = lastChecked.current[key];
+      if (prev !== undefined && Math.abs(price - prev) / prev < 0.0001) continue;
+      lastChecked.current[key] = price;
+      fetch('/api/alerts/check', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ symbol: key, market: 'india', price }),
+      }).catch(() => {});
+    }
+  }, [ticks]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!isAuthenticated) {
     return (

@@ -5,17 +5,39 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { enabledMarkets } from '@/config/markets';
 
-const TABS = enabledMarkets().map(m => ({
+const MARKET_TABS = enabledMarkets().map(m => ({
   href:  `/${m.id}`,
   label: `${m.flag} ${m.name}`,
 }));
 
+const TOOL_TABS = [
+  { href: '/orders',    label: '📋 Orders'    },
+  { href: '/portfolio', label: '📊 Portfolio' },
+  { href: '/alerts',   label: '🔔 Alerts'    },
+];
+
 export default function NavBar({ actions }: { actions?: ReactNode }) {
   const pathname = usePathname();
 
+  function navLink(href: string, label: string) {
+    const active = pathname.startsWith(href);
+    return (
+      <Link
+        key={href}
+        href={href}
+        className={`relative rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all duration-150 ${
+          active ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
+        }`}
+      >
+        {active && <span className="absolute inset-0 rounded-lg bg-white/10" />}
+        <span className="relative">{label}</span>
+      </Link>
+    );
+  }
+
   return (
     <header className="sticky top-0 z-20 border-b border-white/[0.06] bg-zinc-950/90 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
         {/* Logo */}
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2.5">
@@ -25,23 +47,17 @@ export default function NavBar({ actions }: { actions?: ReactNode }) {
             <span className="text-sm font-semibold tracking-tight text-white">MarketSync</span>
           </div>
 
-          {/* Tabs — driven by config/markets.ts */}
+          {/* Market dashboards */}
           <nav className="flex items-center gap-0.5">
-            {TABS.map(tab => {
-              const active = pathname.startsWith(tab.href);
-              return (
-                <Link
-                  key={tab.href}
-                  href={tab.href}
-                  className={`relative rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all duration-150 ${
-                    active ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
-                  }`}
-                >
-                  {active && <span className="absolute inset-0 rounded-lg bg-white/10" />}
-                  <span className="relative">{tab.label}</span>
-                </Link>
-              );
-            })}
+            {MARKET_TABS.map(t => navLink(t.href, t.label))}
+          </nav>
+
+          {/* Divider */}
+          <div className="h-5 w-px bg-white/[0.08]" />
+
+          {/* Trading tools */}
+          <nav className="flex items-center gap-0.5">
+            {TOOL_TABS.map(t => navLink(t.href, t.label))}
           </nav>
         </div>
 

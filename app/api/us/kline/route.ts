@@ -12,6 +12,27 @@ const INTERVAL_MAP: Record<string, number> = {
   '1d':  1440,   // 1440 minutes = 1 day
 };
 
+const INTERVAL_MINUTES: Record<string, number> = {
+  '1m':  1,
+  '5m':  5,
+  '15m': 15,
+  '30m': 30,
+  '1h':  60,
+  '4h':  240,
+  '1d':  1440,
+};
+
+const MAX_PROVIDER_CANDLES = 1500;
+
+const FALLBACK_INTERVALS: Partial<Record<string, string[]>> = {
+  '5m':  ['1m'],
+  '15m': ['5m', '1m'],
+  '30m': ['15m', '5m', '1m'],
+  '1h':  ['15m', '5m', '1m'],
+  '4h':  ['1h', '15m', '5m'],
+  '1d':  ['1h', '15m', '5m'],
+};
+
 // How long cached data is considered fresh (ms)
 const STALE_MS: Record<string, number> = {
   '1m':  1  * 60 * 1000,
@@ -46,11 +67,104 @@ function calcLimit(period: string | null, interval: string, defaultLimit: number
   if (!period) return defaultLimit;
   const days   = PERIOD_DAYS[period]      ?? 21;
   const perDay = CANDLES_PER_DAY[interval] ?? 7;
-  return Math.min(days * perDay, 1500);
+  return Math.min(days * perDay, MAX_PROVIDER_CANDLES);
 }
 
 interface Candle {
   time: number; open: number; high: number; low: number; close: number; volume: number;
+}
+
+function calcFallbackLimit(targetLimit: number, targetInterval: string, sourceInterval: string): number {
+  const targetMinutes = INTERVAL_MINUTES[targetInterval];
+  const sourceMinutes = INTERVAL_MINUTES[sourceInterval];
+
+  if (!targetMinutes || !sourceMinutes || sourceMinutes >= targetMinutes) {
+    return targetLimit;
+  }
+
+  const ratio = Math.ceil(targetMinutes / sourceMinutes);
+  return Math.min(targetLimit * ratio, MAX_PROVIDER_CANDLES);
+}
+
+function aggregateCandles(candles: Candle[], targetInterval: string, sourceInterval: string): Candle[] {
+  const targetMinutes = INTERVAL_MINUTES[targetInterval];
+  const sourceMinutes = INTERVAL_MINUTES[sourceInterval];
+
+  if (!targetMinutes || !sourceMinutes || sourceMinutes >= targetMinutes) {
+    return candles;
+  }
+
+  const bucketSizeSec = targetMinutes * 60;
+  const buckets = new Map<number, Candle>();
+
+  for (const candle of candles) {
+    const bucketTime = Math.floor(candle.time / bucketSizeSec) * bucketSizeSec;
+    const existing = buckets.get(bucketTime);
+
+    if (!existing) {
+      buckets.set(bucketTime, { ...candle, time: bucketTime });
+      continue;
+    }
+
+    existing.high = Math.max(existing.high, candle.high);
+    existing.low = Math.min(existing.low, candle.low);
+    existing.close = candle.close;
+    existing.volume += candle.volume;
+  }
+
+  return [...buckets.values()].sort((a, b) => a.time - b.time);
+}
+
+function hasExpectedCadence(candles: Candle[], interval: string): boolean {
+  if (candles.length < 2) return candles.length > 0;
+
+  const intervalMinutes = INTERVAL_MINUTES[interval];
+  if (!intervalMinutes) return true;
+
+  const expectedStepSec = intervalMinutes * 60;
+  const deltas: number[] = [];
+
+  for (let i = 1; i < candles.length; i += 1) {
+    const delta = candles[i].time - candles[i - 1].time;
+    if (delta <= 0) continue;
+
+    // Ignore session breaks and weekend gaps; we only care about the in-session cadence.
+    if (delta <= expectedStepSec * 6) {
+      deltas.push(delta);
+    }
+  }
+
+  if (deltas.length === 0) return false;
+
+  deltas.sort((a, b) => a - b);
+  const median = deltas[Math.floor(deltas.length / 2)];
+  // Must be within ±50% of the expected cadence.
+  // Without the lower bound, 1m data returned for a 15m request passes
+  // (60 ≤ 900 × 1.5) and the fallback aggregation never triggers.
+  return median >= expectedStepSec * 0.5 && median <= expectedStepSec * 1.5;
+}
+
+async function readCachedCandles(
+  market: string,
+  code: string,
+  interval: string,
+  limit: number,
+  cutoffSec = 0,
+): Promise<Candle[]> {
+  const rows = await prisma.candle.findMany({
+    where: {
+      market,
+      symbol: code,
+      interval,
+      ...(cutoffSec > 0 ? { time: { gte: cutoffSec } } : {}),
+    },
+    orderBy: { time: 'desc' },
+    take: limit,
+    select: { time: true, open: true, high: true, low: true, close: true, volume: true },
+  });
+
+  const candles = rows.reverse();
+  return hasExpectedCadence(candles, interval) ? candles : [];
 }
 
 async function fetchFromAlltick(code: string, interval: string, limit: number): Promise<Candle[]> {
@@ -89,7 +203,59 @@ async function fetchFromAlltick(code: string, interval: string, limit: number): 
       close:  parseFloat(k.close_price),
       volume: parseFloat(k.volume ?? '0'),
     };
-  }).filter(c => c.time > 0 && c.open > 0);
+  })
+    .filter(c => c.time > 0 && c.open > 0)
+    .sort((a, b) => a.time - b.time);
+}
+
+function getSourceIntervals(market: string, interval: string): string[] {
+  if (market === 'hk' && interval === '5m') {
+    return ['1m'];
+  }
+
+  if (market === 'hk' && interval === '15m') {
+    return ['15m', '1m'];
+  }
+
+  return [interval, ...(FALLBACK_INTERVALS[interval] ?? [])];
+}
+
+async function fetchCandlesWithFallback(
+  code: string,
+  market: string,
+  interval: string,
+  limit: number,
+): Promise<Candle[]> {
+  for (const sourceInterval of getSourceIntervals(market, interval)) {
+    try {
+      const sourceLimit = sourceInterval === interval
+        ? limit
+        : calcFallbackLimit(limit, interval, sourceInterval);
+      const sourceCandles = await fetchFromAlltick(code, sourceInterval, sourceLimit);
+      if (sourceCandles.length === 0) continue;
+
+      if (!hasExpectedCadence(sourceCandles, sourceInterval)) {
+        console.warn(`[AllTick kline] Ignoring ${code}/${sourceInterval} because the returned cadence is too coarse`);
+        continue;
+      }
+
+      if (sourceInterval === interval) {
+        return sourceCandles;
+      }
+
+      const aggregated = aggregateCandles(sourceCandles, interval, sourceInterval);
+      if (aggregated.length === 0) continue;
+      if (!hasExpectedCadence(aggregated, interval)) continue;
+
+      console.warn(`[AllTick kline] Falling back from ${interval} to ${sourceInterval} for ${code}`);
+      return aggregated.slice(-limit);
+    } catch (error) {
+      const mode = sourceInterval === interval ? 'direct' : 'fallback';
+      console.warn(`[AllTick kline] ${mode} ${sourceInterval} fetch failed for ${code}:`, error);
+    }
+  }
+
+  return [];
 }
 
 export async function GET(request: NextRequest) {
@@ -122,13 +288,10 @@ export async function GET(request: NextRequest) {
       const isFresh = newest && (Date.now() - newest.fetchedAt.getTime()) < staleness;
 
       if (isFresh) {
-        const rows = await prisma.candle.findMany({
-          where: { market, symbol: code, interval },
-          orderBy: { time: 'asc' },
-          take: limit,
-          select: { time: true, open: true, high: true, low: true, close: true, volume: true },
-        });
-        return NextResponse.json({ candles: rows, source: 'db' });
+        const candles = await readCachedCandles(market, code, interval, limit);
+        if (candles.length > 0) {
+          return NextResponse.json({ candles, source: 'db' });
+        }
       }
     } catch (e) {
       console.error('[US kline] DB read error:', e);
@@ -138,12 +301,21 @@ export async function GET(request: NextRequest) {
   // ── Fetch from AllTick ────────────────────────────────────────
   let candles: Candle[];
   try {
-    candles = await fetchFromAlltick(code, interval, limit);
+    candles = await fetchCandlesWithFallback(code, market, interval, limit);
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 502 });
   }
 
   if (candles.length === 0) {
+    try {
+      const cachedCandles = await readCachedCandles(market, code, interval, limit, cutoffSec);
+      if (cachedCandles.length > 0) {
+        return NextResponse.json({ candles: cachedCandles, source: 'db-fallback' });
+      }
+    } catch (e) {
+      console.error('[US kline] DB fallback read error:', e);
+    }
+
     return NextResponse.json({ candles: [] });
   }
 

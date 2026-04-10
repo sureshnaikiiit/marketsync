@@ -6,7 +6,7 @@ import type { OrderBook } from '@/lib/tick-data';
 import type { MarketConfig, Instrument } from '@/config/markets';
 import { instrumentMap } from '@/config/markets';
 import MiniChart from './MiniChart';
-import CandleChartModal from './CandleChartModal';
+import CandleChartModal from './CandleChartModalV2';
 
 function fmt(p: number) {
   return p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 });
@@ -105,13 +105,36 @@ interface Props {
 
 export default function WatchList({ market }: Props) {
   const { orderBooks, getHistory, subscribe } = useTickData();
-  const prevMids  = useRef<Record<string, number>>({});
+  const prevMids     = useRef<Record<string, number>>({});
+  const lastChecked  = useRef<Record<string, number>>({});   // last price sent to alert check
   const [selected, setSelected] = useState<SelectedSymbol | null>(null);
 
   const codes   = market.instruments.map(i => i.code);
   const iMap    = instrumentMap(market);
 
   useEffect(() => { subscribe(codes); }, [subscribe, codes.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Alert check: fire when mid price changes meaningfully ──────────────
+  useEffect(() => {
+    const iMap = instrumentMap(market);
+    for (const code of codes) {
+      const book = orderBooks[code];
+      if (!book) continue;
+      const b = book.bids[0]; const a = book.asks[0];
+      if (!b || !a) continue;
+      const mid  = (b.price + a.price) / 2;
+      const prev = lastChecked.current[code];
+      if (prev !== undefined && Math.abs(mid - prev) / prev < 0.0001) continue; // skip <0.01% change
+      lastChecked.current[code] = mid;
+      const instr = iMap[code];
+      if (!instr) continue;
+      fetch('/api/alerts/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol: code, market: market.id, price: mid }),
+      }).catch(() => {});
+    }
+  }, [orderBooks]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const rows = codes.map(code => orderBooks[code]).filter(Boolean);
 

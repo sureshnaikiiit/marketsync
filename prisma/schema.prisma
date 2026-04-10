@@ -7,12 +7,14 @@ datasource db {
   provider = "postgresql"
 }
 
+// ─── Candlestick cache ────────────────────────────────────────────────────────
+
 model Candle {
   id       Int    @id @default(autoincrement())
-  market   String @db.VarChar(10)   // "us" | "india"
-  symbol   String                   // "AAPL.US" | "NSE_EQ|INE..."
-  interval String @db.VarChar(10)   // "1m" | "5m" | "1d" etc.
-  time     Int                      // Unix timestamp in seconds
+  market   String @db.VarChar(10)
+  symbol   String
+  interval String @db.VarChar(10)
+  time     Int
   open     Float
   high     Float
   low      Float
@@ -22,4 +24,125 @@ model Candle {
 
   @@unique([market, symbol, interval, time])
   @@index([market, symbol, interval, time])
+}
+
+// ─── Paper-trading user ───────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  /// Available cash balance (starts at 100,000)
+  balance   Float    @default(100000)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders    Order[]
+  positions Position[]
+  alerts    PriceAlert[]
+}
+
+// ─── Orders ───────────────────────────────────────────────────────────────────
+
+/// side:      "BUY" | "SELL"
+/// orderType: "MARKET" | "LIMIT"
+/// status:    "PENDING" | "FILLED" | "PARTIAL" | "CANCELLED" | "REJECTED"
+model Order {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+
+  symbol       String    /// e.g. "AAPL.US"
+  market       String    /// "us" | "hk" | "india"
+  label        String    /// display ticker e.g. "AAPL"
+  currencySymbol String  @default("$")
+
+  side         String    /// "BUY" | "SELL"
+  orderType    String    /// "MARKET" | "LIMIT"
+  status       String    @default("PENDING")
+
+  quantity     Float
+  price        Float     /// limit price (or requested price for MARKET)
+  filledQty    Float     @default(0)
+  avgFillPrice Float?    /// actual execution price
+
+  notes        String?
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  filledAt     DateTime?
+
+  @@index([userId, status])
+  @@index([symbol, status])
+}
+
+// ─── Portfolio positions ──────────────────────────────────────────────────────
+
+model Position {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  symbol    String
+  market    String
+  label     String
+  currencySymbol String @default("$")
+
+  quantity  Float    /// total held quantity
+  avgCost   Float    /// average cost per unit
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, symbol])
+}
+
+// ─── Realized P&L ledger ──────────────────────────────────────────────────────
+
+model PnlEntry {
+  id         String   @id @default(cuid())
+  userId     String
+  symbol     String
+  market     String
+  label      String
+
+  quantity   Float
+  costBasis  Float    /// avg cost at time of sale
+  salePrice  Float
+  realizedPnl Float   /// (salePrice - costBasis) * quantity
+
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ─── Price alerts ─────────────────────────────────────────────────────────────
+
+/// condition: "ABOVE" | "BELOW"
+/// action:    "NOTIFY" | "BUY" | "SELL"
+/// status:    "ACTIVE" | "TRIGGERED" | "CANCELLED"
+model PriceAlert {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+
+  symbol      String
+  market      String
+  label       String
+  currencySymbol String @default("$")
+
+  condition   String    /// "ABOVE" | "BELOW"
+  targetPrice Float
+
+  action      String    /// "NOTIFY" | "BUY" | "SELL"
+  quantity    Float?    /// used when action is BUY or SELL
+
+  status      String    @default("ACTIVE")
+  triggeredAt DateTime?
+  triggeredPrice Float?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId, status])
+  @@index([symbol, status])
 }
