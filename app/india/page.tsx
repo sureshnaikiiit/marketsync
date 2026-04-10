@@ -2,6 +2,7 @@ import NavBar from '@/app/components/NavBar';
 import UpstoxConnectionBadge from '@/app/components/UpstoxConnectionBadge';
 import UpstoxConnectButton from '@/app/components/UpstoxConnectButton';
 import IndiaWatchList from '@/app/components/IndiaWatchList';
+import MarketClock from '@/app/components/MarketClock';
 
 export default function IndiaMarketPage() {
   return (
@@ -23,12 +24,7 @@ export default function IndiaMarketPage() {
               Real-time NSE data · LTP · Change · Volume via Upstox
             </p>
           </div>
-          <span className="text-xs text-zinc-600 font-mono">
-            {new Date().toLocaleDateString('en-IN', {
-              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-              timeZone: 'Asia/Kolkata',
-            })}
-          </span>
+          <MarketClock timezone="Asia/Kolkata" locale="en-IN" />
         </div>
 
         <IndiaWatchList />

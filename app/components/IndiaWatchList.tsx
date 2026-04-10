@@ -178,10 +178,13 @@ export default function IndiaWatchList() {
 
       {selected && (
         <CandleChartModal
+          provider="upstox"
           market="india"
           code={selected.key}
           label={selected.label}
           name={selected.name}
+          currencySymbol="₹"
+          timezone="Asia/Kolkata"
           livePrice={livePrice}
           onClose={() => setSelected(null)}
         />

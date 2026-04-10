@@ -24,6 +24,14 @@ const STALE_MS: Record<string, number> = {
   '1d':  12 * 60 * 60 * 1000,
 };
 
+const PERIOD_MS: Record<string, number> = {
+  '1w': 7   * 24 * 60 * 60 * 1000,
+  '1m': 30  * 24 * 60 * 60 * 1000,
+  '3m': 90  * 24 * 60 * 60 * 1000,
+  '6m': 180 * 24 * 60 * 60 * 1000,
+  '1y': 365 * 24 * 60 * 60 * 1000,
+};
+
 interface Candle {
   time: number; open: number; high: number; low: number; close: number; volume: number;
 }
@@ -34,20 +42,30 @@ function toDate(d: Date) {
   return d.toISOString().split('T')[0];
 }
 
-async function fetchFromUpstox(instrumentKey: string, interval: string): Promise<Candle[]> {
+async function fetchFromUpstox(instrumentKey: string, interval: string, period: string | null): Promise<Candle[]> {
   const token   = process.env.UPSTOX_ACCESS_TOKEN ?? '';
   const headers = { Authorization: `Bearer ${token}`, Accept: 'application/json' };
   const encoded = encodeURIComponent(instrumentKey);
 
   let url: string;
+
   if (HISTORICAL_INTERVAL_MAP[interval]) {
-    const unit     = HISTORICAL_INTERVAL_MAP[interval];
-    const toDate_  = toDate(new Date());
-    const fromDate = toDate(new Date(Date.now() - 365 * 24 * 60 * 60 * 1000));
+    // Daily / weekly / monthly — always use historical with date range
+    const unit      = HISTORICAL_INTERVAL_MAP[interval];
+    const toDate_   = toDate(new Date());
+    const fromDate  = toDate(new Date(Date.now() - (PERIOD_MS[period ?? '1y'] ?? PERIOD_MS['1y'])));
     url = `https://api.upstox.com/v2/historical-candle/${encoded}/${unit}/${toDate_}/${fromDate}`;
   } else if (INTRADAY_INTERVAL_MAP[interval]) {
     const unit = INTRADAY_INTERVAL_MAP[interval];
-    url = `https://api.upstox.com/v2/historical-candle/intraday/${encoded}/${unit}`;
+    if (period) {
+      // Specific period requested — use historical endpoint with date range
+      const toDate_  = toDate(new Date());
+      const fromDate = toDate(new Date(Date.now() - PERIOD_MS[period]));
+      url = `https://api.upstox.com/v2/historical-candle/${encoded}/${unit}/${toDate_}/${fromDate}`;
+    } else {
+      // No period — use intraday endpoint (today's session only)
+      url = `https://api.upstox.com/v2/historical-candle/intraday/${encoded}/${unit}`;
+    }
   } else {
     throw new Error(`Unsupported interval: ${interval}`);
   }
@@ -72,39 +90,50 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const instrumentKey = searchParams.get('instrumentKey');
   const interval      = searchParams.get('interval') ?? '1d';
+  const period        = searchParams.get('period') ?? null;
 
   if (!instrumentKey) {
     return NextResponse.json({ error: 'instrumentKey is required' }, { status: 400 });
   }
 
-  const staleness = STALE_MS[interval] ?? STALE_MS['1d'];
+  const staleness  = STALE_MS[interval] ?? STALE_MS['1d'];
+  const cutoffSec  = period ? Math.floor((Date.now() - PERIOD_MS[period]) / 1000) : 0;
 
   // ── Check DB cache ────────────────────────────────────────────
-  try {
-    const newest = await prisma.candle.findFirst({
-      where: { market: 'india', symbol: instrumentKey, interval },
-      orderBy: { fetchedAt: 'desc' },
-      select: { fetchedAt: true },
-    });
+  // Skip DB cache for intraday+period: cached data may only cover today,
+  // but the period request needs multi-day historical data.
+  const skipDbCache = !!(period && INTRADAY_INTERVAL_MAP[interval]);
 
-    const isFresh = newest && (Date.now() - newest.fetchedAt.getTime()) < staleness;
-
-    if (isFresh) {
-      const rows = await prisma.candle.findMany({
+  if (!skipDbCache) {
+    try {
+      const newest = await prisma.candle.findFirst({
         where: { market: 'india', symbol: instrumentKey, interval },
-        orderBy: { time: 'asc' },
-        select: { time: true, open: true, high: true, low: true, close: true, volume: true },
+        orderBy: { fetchedAt: 'desc' },
+        select: { fetchedAt: true },
       });
-      return NextResponse.json({ candles: rows, source: 'db' });
+
+      const isFresh = newest && (Date.now() - newest.fetchedAt.getTime()) < staleness;
+
+      if (isFresh) {
+        const rows = await prisma.candle.findMany({
+          where: {
+            market: 'india', symbol: instrumentKey, interval,
+            ...(cutoffSec > 0 ? { time: { gte: cutoffSec } } : {}),
+          },
+          orderBy: { time: 'asc' },
+          select: { time: true, open: true, high: true, low: true, close: true, volume: true },
+        });
+        return NextResponse.json({ candles: rows, source: 'db' });
+      }
+    } catch (e) {
+      console.error('[India kline] DB read error:', e);
     }
-  } catch (e) {
-    console.error('[India kline] DB read error:', e);
   }
 
   // ── Fetch from Upstox ─────────────────────────────────────────
   let candles: Candle[];
   try {
-    candles = await fetchFromUpstox(instrumentKey, interval);
+    candles = await fetchFromUpstox(instrumentKey, interval, period);
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 502 });
   }
@@ -124,5 +153,6 @@ export async function GET(request: NextRequest) {
     console.error('[India kline] DB write error:', e);
   }
 
-  return NextResponse.json({ candles, source: 'live' });
+  const filtered = cutoffSec > 0 ? candles.filter(c => c.time >= cutoffSec) : candles;
+  return NextResponse.json({ candles: filtered, source: 'live' });
 }

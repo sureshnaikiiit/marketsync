@@ -3,25 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTickData } from '@/lib/tick-data';
 import type { OrderBook } from '@/lib/tick-data';
+import type { MarketConfig, Instrument } from '@/config/markets';
+import { instrumentMap } from '@/config/markets';
 import MiniChart from './MiniChart';
 import CandleChartModal from './CandleChartModal';
-
-const DEFAULT_SYMBOLS = [
-  'AAPL.US',  // Apple
-  'MSFT.US',  // Microsoft
-  'NVDA.US',  // Nvidia
-  'TSLA.US',  // Tesla
-  'AMZN.US',  // Amazon
-  'GOOGL.US', // Alphabet
-  'META.US',  // Meta
-  'UNH.US',   // UnitedHealth
-];
-
-const SYMBOL_NAMES: Record<string, string> = {
-  'AAPL.US': 'Apple', 'MSFT.US': 'Microsoft', 'NVDA.US': 'Nvidia',
-  'TSLA.US': 'Tesla', 'AMZN.US': 'Amazon',    'GOOGL.US': 'Alphabet',
-  'META.US': 'Meta',  'UNH.US':  'UnitedHealth',
-};
 
 function fmt(p: number) {
   return p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 });
@@ -31,53 +16,62 @@ function fmtVol(v: number) {
   if (v >= 1_000)     return `${(v / 1_000).toFixed(0)}K`;
   return v.toString();
 }
-function formatTime(ms: number) {
-  return new Date(ms).toLocaleTimeString('en-US', { hour12: false });
+function formatTime(ms: number, timezone: string) {
+  return new Date(ms).toLocaleTimeString('en-US', { hour12: false, timeZone: timezone });
 }
 
-function TickRow({
-  book, prevMid, history, onClick,
-}: {
+interface TickRowProps {
   book: OrderBook;
+  instrument: Instrument;
   prevMid: number | null;
   history: { time: number; value: number }[];
+  currencySymbol: string;
+  timezone: string;
   onClick: () => void;
-}) {
+}
+
+function TickRow({ book, instrument, prevMid, history, currencySymbol, timezone, onClick }: TickRowProps) {
   const bestBid = book.bids[0];
   const bestAsk = book.asks[0];
   const mid     = bestBid && bestAsk ? (bestBid.price + bestAsk.price) / 2 : null;
   const spread  = bestBid && bestAsk ? bestAsk.price - bestBid.price : null;
   const up      = mid !== null && prevMid !== null && mid > prevMid;
   const down    = mid !== null && prevMid !== null && mid < prevMid;
-  const ticker  = book.code.replace('.US', '');
-  const name    = SYMBOL_NAMES[book.code] ?? '';
 
   return (
     <tr
       onClick={onClick}
-      className={`group border-b border-white/[0.04] transition-colors cursor-pointer hover:bg-white/[0.03] ${up ? 'flash-up' : down ? 'flash-down' : ''}`}
+      className={`group border-b border-white/[0.04] transition-colors cursor-pointer hover:bg-white/[0.03] ${
+        up ? 'flash-up' : down ? 'flash-down' : ''
+      }`}
     >
       {/* Symbol */}
       <td className="px-5 py-3">
-        <div className="font-mono font-bold text-white text-sm">{ticker}</div>
-        <div className="text-xs text-zinc-600 mt-0.5">{name}</div>
+        <div className="font-mono font-bold text-white text-sm">{instrument.label}</div>
+        <div className="text-xs text-zinc-600 mt-0.5">{instrument.name}</div>
       </td>
 
       {/* Bid */}
       <td className="px-4 py-3 font-mono tabular-nums text-right">
-        <div className="text-emerald-400 font-semibold text-sm">{bestBid ? fmt(bestBid.price) : '—'}</div>
+        <div className="text-emerald-400 font-semibold text-sm">
+          {bestBid ? `${currencySymbol}${fmt(bestBid.price)}` : '—'}
+        </div>
         {bestBid && <div className="text-xs text-emerald-700 mt-0.5">{fmtVol(bestBid.volume)}</div>}
       </td>
 
       {/* Ask */}
       <td className="px-4 py-3 font-mono tabular-nums text-right">
-        <div className="text-red-400 font-semibold text-sm">{bestAsk ? fmt(bestAsk.price) : '—'}</div>
+        <div className="text-red-400 font-semibold text-sm">
+          {bestAsk ? `${currencySymbol}${fmt(bestAsk.price)}` : '—'}
+        </div>
         {bestAsk && <div className="text-xs text-red-700 mt-0.5">{fmtVol(bestAsk.volume)}</div>}
       </td>
 
       {/* Mid */}
-      <td className={`px-4 py-3 font-mono tabular-nums text-right font-bold text-sm ${up ? 'text-emerald-400' : down ? 'text-red-400' : 'text-white'}`}>
-        {mid !== null ? fmt(mid) : '—'}
+      <td className={`px-4 py-3 font-mono tabular-nums text-right font-bold text-sm ${
+        up ? 'text-emerald-400' : down ? 'text-red-400' : 'text-white'
+      }`}>
+        {mid !== null ? `${currencySymbol}${fmt(mid)}` : '—'}
       </td>
 
       {/* Spread */}
@@ -94,32 +88,36 @@ function TickRow({
 
       {/* Updated */}
       <td className="px-5 py-3 text-right text-zinc-600 text-xs font-mono">
-        {formatTime(book.tickTime)}
+        {formatTime(book.tickTime, timezone)}
       </td>
     </tr>
   );
 }
 
 interface SelectedSymbol {
-  code: string;
-  label: string;
-  name: string;
+  instrument: Instrument;
   livePrice: number | null;
 }
 
-export default function WatchList() {
+interface Props {
+  market: MarketConfig;
+}
+
+export default function WatchList({ market }: Props) {
   const { orderBooks, getHistory, subscribe } = useTickData();
-  const prevMids = useRef<Record<string, number>>({});
+  const prevMids  = useRef<Record<string, number>>({});
   const [selected, setSelected] = useState<SelectedSymbol | null>(null);
 
-  useEffect(() => { subscribe(DEFAULT_SYMBOLS); }, [subscribe]);
+  const codes   = market.instruments.map(i => i.code);
+  const iMap    = instrumentMap(market);
 
-  const rows = DEFAULT_SYMBOLS.map(code => orderBooks[code]).filter(Boolean);
+  useEffect(() => { subscribe(codes); }, [subscribe, codes.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Keep live price fresh in modal without re-opening it
+  const rows = codes.map(code => orderBooks[code]).filter(Boolean);
+
   const livePrice = selected
     ? (() => {
-        const book = orderBooks[selected.code];
+        const book = orderBooks[selected.instrument.code];
         const b = book?.bids[0]; const a = book?.asks[0];
         return b && a ? (b.price + a.price) / 2 : null;
       })()
@@ -134,7 +132,9 @@ export default function WatchList() {
               {['Symbol', 'Best Bid', 'Best Ask', 'Mid', 'Spread', 'Chart', 'Updated'].map((h, i) => (
                 <th
                   key={h}
-                  className={`px-${i === 0 || i === 6 ? 5 : 4} py-3 text-xs font-medium uppercase tracking-widest text-zinc-600 ${i === 0 ? 'text-left' : 'text-right'}`}
+                  className={`px-${i === 0 || i === 6 ? 5 : 4} py-3 text-xs font-medium uppercase tracking-widest text-zinc-600 ${
+                    i === 0 ? 'text-left' : 'text-right'
+                  }`}
                 >
                   {h}
                 </th>
@@ -146,28 +146,28 @@ export default function WatchList() {
               <tr>
                 <td colSpan={7} className="px-5 py-16 text-center">
                   <div className="text-zinc-600 text-sm">Waiting for market data…</div>
-                  <div className="text-zinc-700 text-xs mt-1">US market hours: 9:30 AM – 4:00 PM ET</div>
+                  <div className="text-zinc-700 text-xs mt-1">{market.name} hours: {market.hours}</div>
                 </td>
               </tr>
             ) : (
               rows.map(book => {
+                const instrument = iMap[book.code];
+                if (!instrument) return null;
                 const bestBid = book.bids[0];
                 const bestAsk = book.asks[0];
-                const mid = bestBid && bestAsk ? (bestBid.price + bestAsk.price) / 2 : null;
-                const prev = prevMids.current[book.code] ?? null;
+                const mid     = bestBid && bestAsk ? (bestBid.price + bestAsk.price) / 2 : null;
+                const prev    = prevMids.current[book.code] ?? null;
                 if (mid !== null) prevMids.current[book.code] = mid;
                 return (
                   <TickRow
                     key={book.code}
                     book={book}
+                    instrument={instrument}
                     prevMid={prev}
                     history={getHistory(book.code)}
-                    onClick={() => setSelected({
-                      code:      book.code,
-                      label:     book.code.replace('.US', ''),
-                      name:      SYMBOL_NAMES[book.code] ?? '',
-                      livePrice: mid,
-                    })}
+                    currencySymbol={market.currencySymbol}
+                    timezone={market.timezone}
+                    onClick={() => setSelected({ instrument, livePrice: mid })}
                   />
                 );
               })
@@ -178,10 +178,14 @@ export default function WatchList() {
 
       {selected && (
         <CandleChartModal
-          market="us"
-          code={selected.code}
-          label={selected.label}
-          name={selected.name}
+          provider="alltick"
+          market={market.id}
+          intervals={market.klineIntervals}
+          code={selected.instrument.code}
+          label={selected.instrument.label}
+          name={selected.instrument.name}
+          currencySymbol={market.currencySymbol}
+          timezone={market.timezone}
           livePrice={livePrice}
           onClose={() => setSelected(null)}
         />
