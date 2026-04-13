@@ -1,7 +1,7 @@
 -- Drop existing primary key and unique constraint
 ALTER TABLE "Candle" DROP CONSTRAINT IF EXISTS "Candle_pkey";
 ALTER TABLE "Candle" DROP CONSTRAINT IF EXISTS "Candle_market_symbol_interval_time_key";
-ALTER TABLE "Candle" DROP INDEX IF EXISTS "Candle_market_symbol_interval_time_idx";
+DROP INDEX IF EXISTS "Candle_market_symbol_interval_time_idx";
 
 -- Drop the surrogate id column
 ALTER TABLE "Candle" DROP COLUMN IF EXISTS "id";
