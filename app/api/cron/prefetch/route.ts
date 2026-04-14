@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Agent, fetch as undiciFetch } from 'undici';
+import https from 'node:https';
 import { MARKETS } from '@/config/markets';
 import { writeCandles, type Candle } from '@/lib/timescale';
 
 // Upstox uses a cert chain not trusted by all Node.js runtimes; bypass for outbound calls only
-const upstoxAgent = new Agent({ connect: { rejectUnauthorized: false } });
+const upstoxAgent = new https.Agent({ rejectUnauthorized: false });
 
 // ── Security: Vercel signs cron requests with this secret ────────────────────
 function isAuthorised(req: NextRequest): boolean {
@@ -15,6 +15,20 @@ function isAuthorised(req: NextRequest): boolean {
 }
 
 // ── Upstox fetch (India) — daily historical only ─────────────────────────────
+function httpsGet(url: string, headers: Record<string, string>): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const u = new URL(url);
+    https.get({ hostname: u.hostname, path: u.pathname + u.search, headers, agent: upstoxAgent }, (res) => {
+      let body = '';
+      res.on('data', (chunk: string) => { body += chunk; });
+      res.on('end', () => {
+        if (res.statusCode !== 200) reject(new Error(`Upstox ${res.statusCode}`));
+        else resolve(body);
+      });
+    }).on('error', reject);
+  });
+}
+
 async function fetchUpstox(instrumentKey: string): Promise<Candle[]> {
   const token   = process.env.UPSTOX_ACCESS_TOKEN ?? '';
   const encoded = encodeURIComponent(instrumentKey);
@@ -22,13 +36,8 @@ async function fetchUpstox(instrumentKey: string): Promise<Candle[]> {
   const from    = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   const url     = `https://api.upstox.com/v2/historical-candle/${encoded}/day/${today}/${from}`;
 
-  const res = await undiciFetch(url, {
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-    dispatcher: upstoxAgent,
-  } as Parameters<typeof undiciFetch>[1]);
-  if (!res.ok) throw new Error(`Upstox ${res.status}`);
-
-  const raw = await res.json() as { status: string; data: { candles: [string, number, number, number, number, number][] } };
+  const body = await httpsGet(url, { Authorization: `Bearer ${token}`, Accept: 'application/json' });
+  const raw  = JSON.parse(body) as { status: string; data: { candles: [string, number, number, number, number, number][] } };
   if (raw.status !== 'success') throw new Error('Upstox error status');
 
   return [...raw.data.candles].reverse().map(([ts, open, high, low, close, volume]) => ({
