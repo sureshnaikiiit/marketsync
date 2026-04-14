@@ -105,6 +105,8 @@ export default function OrdersPage() {
   // ── Auto-fill price for MARKET orders ───────────────────────────────────
   useEffect(() => {
     if (orderType !== 'MARKET') return;
+    setPrice('');
+    setPriceAutoFilled(false);
     let cancelled = false;
     async function fetchLatestPrice() {
       try {
@@ -124,7 +126,7 @@ export default function OrdersPage() {
     }
     fetchLatestPrice();
     return () => { cancelled = true; };
-  }, [selected, orderType]);
+  }, [selected, orderType, side]);
 
   // ── Submit order ─────────────────────────────────────────────────────────
   async function submitOrder(e: React.FormEvent) {
@@ -146,7 +148,7 @@ export default function OrdersPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Failed');
       setFormMsg({ type: 'ok', text: `${side} order placed for ${quantity} × ${selected.label}` });
-      setQty('1'); setPrice(''); setPriceAutoFilled(false); setNotes('');
+      setQty('1'); setNotes('');
       fetchData();
     } catch (err) {
       setFormMsg({ type: 'err', text: (err as Error).message });
