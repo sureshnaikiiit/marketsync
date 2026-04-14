@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getNewestFetchedAt, readCandles, writeCandles, type Candle } from '@/lib/timescale';
 
 // AllTick kline_type codes (integers = minutes; daily = 1440)
 const INTERVAL_MAP: Record<string, number> = {
@@ -70,9 +70,6 @@ function calcLimit(period: string | null, interval: string, defaultLimit: number
   return Math.min(days * perDay, MAX_PROVIDER_CANDLES);
 }
 
-interface Candle {
-  time: number; open: number; high: number; low: number; close: number; volume: number;
-}
 
 function calcFallbackLimit(targetLimit: number, targetInterval: string, sourceInterval: string): number {
   const targetMinutes = INTERVAL_MINUTES[targetInterval];
@@ -151,19 +148,7 @@ async function readCachedCandles(
   limit: number,
   cutoffSec = 0,
 ): Promise<Candle[]> {
-  const rows = await prisma.candle.findMany({
-    where: {
-      market,
-      symbol: code,
-      interval,
-      ...(cutoffSec > 0 ? { time: { gte: cutoffSec } } : {}),
-    },
-    orderBy: { time: 'desc' },
-    take: limit,
-    select: { time: true, open: true, high: true, low: true, close: true, volume: true },
-  });
-
-  const candles = rows.reverse();
+  const candles = await readCandles(market, code, interval, limit, cutoffSec);
   return hasExpectedCadence(candles, interval) ? candles : [];
 }
 
@@ -279,13 +264,8 @@ export async function GET(request: NextRequest) {
   // serving a shorter cached slice that doesn't cover the full range.
   if (!period) {
     try {
-      const newest = await prisma.candle.findFirst({
-        where: { market, symbol: code, interval },
-        orderBy: { fetchedAt: 'desc' },
-        select: { fetchedAt: true },
-      });
-
-      const isFresh = newest && (Date.now() - newest.fetchedAt.getTime()) < staleness;
+      const fetchedAt = await getNewestFetchedAt(market, code, interval);
+      const isFresh   = fetchedAt && (Date.now() - fetchedAt.getTime()) < staleness;
 
       if (isFresh) {
         const candles = await readCachedCandles(market, code, interval, limit);
@@ -319,15 +299,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ candles: [] });
   }
 
-  // ── Persist to DB ─────────────────────────────────────────────
+  // ── Persist to TimescaleDB ────────────────────────────────────
   try {
-    const result = await prisma.candle.createMany({
-      data: candles.map(c => ({ market, symbol: code, interval, ...c })),
-      skipDuplicates: true,
-    });
-    console.log(`[${market.toUpperCase()} kline] Inserted ${result.count} new candles for ${code}/${interval}`);
+    const count = await writeCandles(market, code, interval, candles);
+    console.log(`[${market.toUpperCase()} kline] Inserted ${count} new candles for ${code}/${interval}`);
   } catch (e) {
-    console.error('[US kline] DB write error:', e);
+    console.error('[US kline] TimescaleDB write error:', e);
   }
 
   // Filter by period cutoff before returning live data

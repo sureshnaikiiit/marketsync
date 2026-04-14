@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getNewestFetchedAt, readCandles, writeCandles } from '@/lib/timescale';
 
 const HISTORICAL_INTERVAL_MAP: Record<string, string> = {
   '1d':  'day',
@@ -106,23 +106,11 @@ export async function GET(request: NextRequest) {
 
   if (!skipDbCache) {
     try {
-      const newest = await prisma.candle.findFirst({
-        where: { market: 'india', symbol: instrumentKey, interval },
-        orderBy: { fetchedAt: 'desc' },
-        select: { fetchedAt: true },
-      });
-
-      const isFresh = newest && (Date.now() - newest.fetchedAt.getTime()) < staleness;
+      const fetchedAt = await getNewestFetchedAt('india', instrumentKey, interval);
+      const isFresh   = fetchedAt && (Date.now() - fetchedAt.getTime()) < staleness;
 
       if (isFresh) {
-        const rows = await prisma.candle.findMany({
-          where: {
-            market: 'india', symbol: instrumentKey, interval,
-            ...(cutoffSec > 0 ? { time: { gte: cutoffSec } } : {}),
-          },
-          orderBy: { time: 'asc' },
-          select: { time: true, open: true, high: true, low: true, close: true, volume: true },
-        });
+        const rows = await readCandles('india', instrumentKey, interval, 2000, cutoffSec);
         return NextResponse.json({ candles: rows, source: 'db' });
       }
     } catch (e) {
@@ -142,15 +130,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ candles: [] });
   }
 
-  // ── Persist to DB ─────────────────────────────────────────────
+  // ── Persist to TimescaleDB ────────────────────────────────────
   try {
-    const result = await prisma.candle.createMany({
-      data: candles.map(c => ({ market: 'india', symbol: instrumentKey, interval, ...c })),
-      skipDuplicates: true,
-    });
-    console.log(`[India kline] Inserted ${result.count} new candles for ${instrumentKey}/${interval}`);
+    const count = await writeCandles('india', instrumentKey, interval, candles);
+    console.log(`[India kline] Inserted ${count} new candles for ${instrumentKey}/${interval}`);
   } catch (e) {
-    console.error('[India kline] DB write error:', e);
+    console.error('[India kline] TimescaleDB write error:', e);
   }
 
   const filtered = cutoffSec > 0 ? candles.filter(c => c.time >= cutoffSec) : candles;

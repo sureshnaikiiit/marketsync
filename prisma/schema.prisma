@@ -7,25 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-// ─── Candlestick cache ────────────────────────────────────────────────────────
-
-model Candle {
-  market    String   @db.VarChar(10)
-  symbol    String
-  interval  String   @db.VarChar(10)
-  /// Unix timestamp in seconds — partition column for TimescaleDB hypertable
-  time      Int
-  open      Float
-  high      Float
-  low       Float
-  close     Float
-  volume    Float
-  fetchedAt DateTime @default(now())
-
-  @@id([market, symbol, interval, time])
-  @@index([symbol, interval, time])
-}
-
 // ─── Paper-trading user ───────────────────────────────────────────────────────
 
 model User {
