@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserFromRequest, unauthorizedResponse } from '@/lib/session';
+import { readCandles } from '@/lib/timescale';
 
 export async function GET(request: NextRequest) {
   const user = await getUserFromRequest(request);
@@ -12,14 +13,13 @@ export async function GET(request: NextRequest) {
     orderBy: { updatedAt: 'desc' },
   });
 
-  // For each position, grab the latest close price from candle cache
+  // For each position, grab the latest close price from candle cache (TimescaleDB)
   const enriched = await Promise.all(positions.map(async (pos) => {
-    const latest = await prisma.candle.findFirst({
-      where:   { symbol: pos.symbol, market: pos.market },
-      orderBy: { time: 'desc' },
-      select:  { close: true, time: true },
-    });
-    const currentPrice  = latest?.close ?? pos.avgCost;
+    let currentPrice = pos.avgCost;
+    try {
+      const candles = await readCandles(pos.market, pos.symbol, '1d', 1);
+      if (candles.length > 0) currentPrice = candles[candles.length - 1].close;
+    } catch { /* fall back to avgCost */ }
     const marketValue   = currentPrice * pos.quantity;
     const costValue     = pos.avgCost  * pos.quantity;
     const unrealizedPnl = marketValue - costValue;
