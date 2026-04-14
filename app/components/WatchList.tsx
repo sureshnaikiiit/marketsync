@@ -75,7 +75,7 @@ function TickRow({ book, instrument, prevMid, history, currencySymbol, timezone,
       </td>
 
       {/* Spread */}
-      <td className="px-4 py-3 font-mono tabular-nums text-right text-zinc-500 text-xs">
+      <td className="px-4 py-3 font-mono tabular-nums text-right text-zinc-300 text-xs">
         {spread !== null ? spread.toFixed(3) : '—'}
       </td>
 

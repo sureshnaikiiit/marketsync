@@ -67,7 +67,7 @@ function TickRow({ tick, prevLtp, history, onClick }: {
       </td>
 
       {/* Volume */}
-      <td className="px-4 py-3 font-mono tabular-nums text-right text-zinc-500 text-xs">
+      <td className="px-4 py-3 font-mono tabular-nums text-right text-zinc-300 text-xs">
         {fmtVol(tick.vtt)}
       </td>
 
