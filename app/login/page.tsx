@@ -75,6 +75,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error,    setError]    = useState('');
   const [loading,  setLoading]  = useState(false);
+  const [success,  setSuccess]  = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -88,15 +89,34 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? 'Login failed'); return; }
-      router.push('/india');
-      router.refresh();
+      setSuccess(true);
+      setTimeout(() => { router.push('/india'); router.refresh(); }, 1400);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: 'linear-gradient(135deg, #0a0f1e 0%, #0d1f12 60%, #071a2e 100%)' }}>
+    <div className="min-h-screen flex relative" style={{ background: 'linear-gradient(135deg, #0a0f1e 0%, #0d1f12 60%, #071a2e 100%)' }}>
+
+      {/* ── Success overlay ── */}
+      {success && (
+        <div className="success-overlay absolute inset-0 z-50 flex flex-col items-center justify-center gap-5"
+          style={{ background: 'linear-gradient(135deg, #0a0f1e 0%, #0d1f12 60%, #071a2e 100%)' }}>
+          <div className="success-icon flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/20 ring-4 ring-emerald-500/40">
+            <svg className="w-10 h-10 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div className="text-center">
+            <p className="text-xl font-bold text-white">Welcome back!</p>
+            <p className="text-sm text-zinc-400 mt-1">Taking you to your dashboard…</p>
+          </div>
+          <div className="w-48 h-1 rounded-full bg-white/10 overflow-hidden">
+            <div className="progress-bar h-full rounded-full bg-emerald-500" />
+          </div>
+        </div>
+      )}
 
       {/* ══════════ LEFT — Market showcase ══════════ */}
       <div className="hidden lg:flex lg:flex-1 relative overflow-hidden flex-col p-8 gap-4"
