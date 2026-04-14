@@ -145,6 +145,11 @@ export default function CandleChartModalV2({
   const [error, setError] = useState<string | null>(null);
   const [ohlc, setOhlc] = useState<OhlcDisplay | null>(null);
   const [fallbackMsg, setFallbackMsg] = useState<string | null>(null);
+  const [dataSource, setDataSource] = useState<'db' | 'live' | null>(null);
+  const [showDataSource, setShowDataSource] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('chart_show_datasource') === 'true';
+  });
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -186,6 +191,7 @@ export default function CandleChartModalV2({
         return; // interval state change will re-trigger fetchCandles
       }
 
+      setDataSource(json?.source === 'db' ? 'db' : 'live');
       setCandles(result);
     } catch (err) {
       if (fetchSeq !== fetchSeqRef.current) return;
@@ -362,6 +368,14 @@ export default function CandleChartModalV2({
 
   const isUp = ohlc ? ohlc.close >= ohlc.open : true;
 
+  function toggleDataSource() {
+    setShowDataSource(prev => {
+      const next = !prev;
+      localStorage.setItem('chart_show_datasource', String(next));
+      return next;
+    });
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm"
@@ -441,6 +455,31 @@ export default function CandleChartModalV2({
                 </div>
               )}
             </div>
+
+            {/* Data source badge — visible only when enabled */}
+            {showDataSource && dataSource && !loading && (
+              <div className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-mono font-semibold ${
+                dataSource === 'db'
+                  ? 'border-blue-500/40 bg-blue-500/10 text-blue-300'
+                  : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+              }`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${dataSource === 'db' ? 'bg-blue-400' : 'bg-emerald-400 animate-pulse'}`} />
+                {dataSource === 'db' ? '💾 DB Cache' : '🌐 Live API'}
+              </div>
+            )}
+
+            {/* Toggle button */}
+            <button
+              onClick={toggleDataSource}
+              title={showDataSource ? 'Hide data source' : 'Show data source'}
+              className={`flex h-7 w-7 items-center justify-center rounded-full text-xs transition-colors ${
+                showDataSource ? 'bg-white/10 text-white' : 'text-zinc-600 hover:bg-white/[0.06] hover:text-zinc-400'
+              }`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M4 12h16M4 17h7" />
+              </svg>
+            </button>
 
             <button
               onClick={onClose}
