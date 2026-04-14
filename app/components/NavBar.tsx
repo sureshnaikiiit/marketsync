@@ -58,7 +58,7 @@ export default function NavBar({ actions }: { actions?: ReactNode }) {
   }
 
   return (
-    <header className="sticky top-0 z-20 border-b border-white/[0.06] bg-zinc-950/90 backdrop-blur-xl">
+    <header className="sticky top-0 z-20 border-b border-white/[0.06] bg-[#0d1117]/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
         {/* Logo */}
         <div className="flex items-center gap-6">

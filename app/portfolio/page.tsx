@@ -108,7 +108,7 @@ export default function PortfolioPage() {
   return (
     <>
     <NavBar />
-    <main className="min-h-screen bg-zinc-950 p-6 text-zinc-100">
+    <main className="min-h-screen bg-[#0d1117] p-6 text-zinc-100">
       <div className="max-w-6xl mx-auto space-y-6">
 
         {/* Header */}

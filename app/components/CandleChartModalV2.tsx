@@ -237,7 +237,7 @@ export default function CandleChartModalV2({
       width: containerRef.current.clientWidth,
       height: 420,
       layout: {
-        background: { color: '#09090b' },
+        background: { color: '#0d1117' },
         textColor: '#a1a1aa',
       },
       grid: {
@@ -368,7 +368,7 @@ export default function CandleChartModalV2({
       onClick={onClose}
     >
       <div
-        className="relative mx-4 w-full max-w-5xl overflow-hidden rounded-2xl border border-white/[0.08] bg-zinc-950 shadow-2xl"
+        className="relative mx-4 w-full max-w-5xl overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0d1117] shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4">
@@ -492,13 +492,13 @@ export default function CandleChartModalV2({
           <div ref={containerRef} className="h-[420px] w-full" />
 
           {loading && (
-            <div className="absolute inset-0 z-20 flex items-center justify-center bg-zinc-950">
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#0d1117]">
               <div className="shimmer text-sm text-zinc-500">Loading candles...</div>
             </div>
           )}
 
           {!loading && error && (
-            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-zinc-950">
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-[#0d1117]">
               <p className="text-sm text-red-400">{error}</p>
               <button onClick={fetchCandles} className="text-xs text-zinc-400 underline hover:text-white">
                 Retry
@@ -507,7 +507,7 @@ export default function CandleChartModalV2({
           )}
 
           {!loading && !error && candles.length === 0 && (
-            <div className="absolute inset-0 z-20 flex items-center justify-center bg-zinc-950">
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#0d1117]">
               <p className="text-sm text-zinc-500">No candle data available for this interval</p>
             </div>
           )}

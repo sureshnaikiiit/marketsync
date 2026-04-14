@@ -100,7 +100,7 @@ export default function ProfilePage() {
     return (
       <>
         <NavBar />
-        <main className="min-h-screen bg-zinc-950 flex items-center justify-center text-zinc-500">
+        <main className="min-h-screen bg-[#0d1117] flex items-center justify-center text-zinc-500">
           Loading profile…
         </main>
       </>
@@ -111,7 +111,7 @@ export default function ProfilePage() {
     return (
       <>
         <NavBar />
-        <main className="min-h-screen bg-zinc-950 flex items-center justify-center text-zinc-500">
+        <main className="min-h-screen bg-[#0d1117] flex items-center justify-center text-zinc-500">
           Failed to load profile.
         </main>
       </>
@@ -125,7 +125,7 @@ export default function ProfilePage() {
   return (
     <>
       <NavBar />
-      <main className="min-h-screen bg-zinc-950 p-6 text-zinc-100">
+      <main className="min-h-screen bg-[#0d1117] p-6 text-zinc-100">
         <div className="max-w-3xl mx-auto space-y-8">
 
           {/* ── Header ── */}

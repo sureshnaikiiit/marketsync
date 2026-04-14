@@ -8,7 +8,7 @@ const market = getMarket('hk')!;
 
 export default function HKMarketPage() {
   return (
-    <main className="min-h-screen bg-zinc-950 text-white">
+    <main className="min-h-screen bg-[#0d1117] text-white">
       <NavBar actions={<ConnectionBadge />} />
 
       <div className="mx-auto max-w-6xl px-6 py-8">
