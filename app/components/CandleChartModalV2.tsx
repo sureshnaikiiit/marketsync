@@ -476,31 +476,19 @@ export default function CandleChartModalV2({
               )}
             </div>
 
-            {/* Combined debug panel — visible only when enabled */}
-            {showDataSource && !loading && dataSource && (
-              <div className="flex items-center rounded-md border border-white/[0.10] bg-white/[0.04] overflow-hidden text-[10px] font-mono whitespace-nowrap">
-                <div className={`flex items-center gap-1 px-2 py-1 border-r border-white/[0.08] ${
-                  dataSource === 'live' ? 'text-emerald-300' : 'text-blue-300'
-                }`}>
-                  <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${
-                    dataSource === 'live' ? 'bg-emerald-400 animate-pulse' : 'bg-blue-400'
-                  }`} />
-                  <span className="font-semibold">
-                    {dataSource === 'live' ? 'Live API' : dataSource === 'db-fallback' ? 'DB Fallback' : 'DB Cache'}
-                  </span>
-                </div>
-                <button
-                  onClick={toggleDataMode}
-                  title="Click to switch strategy"
-                  className={`flex items-center gap-1 px-2 py-1 font-semibold transition-colors ${
-                    dataMode === 'db-first'
-                      ? 'text-violet-300 hover:bg-violet-500/10'
-                      : 'text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200'
-                  }`}
-                >
-                  {dataMode === 'db-first' ? 'DB-First ⇄' : 'Cache-Aside ⇄'}
-                </button>
-              </div>
+            {/* Strategy toggle — visible only when debug is on */}
+            {showDataSource && (
+              <button
+                onClick={toggleDataMode}
+                title="Click to switch data strategy"
+                className={`flex items-center gap-1 rounded-md border px-2 py-1 text-[10px] font-mono font-semibold whitespace-nowrap transition-colors ${
+                  dataMode === 'db-first'
+                    ? 'border-violet-500/40 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20'
+                    : 'border-white/[0.10] bg-white/[0.04] text-zinc-400 hover:bg-white/[0.08] hover:text-zinc-200'
+                }`}
+              >
+                {dataMode === 'db-first' ? 'DB-First ⇄' : 'Cache-Aside ⇄'}
+              </button>
             )}
 
             {/* Debug toggle button */}
