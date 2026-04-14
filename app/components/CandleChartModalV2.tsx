@@ -476,33 +476,38 @@ export default function CandleChartModalV2({
               )}
             </div>
 
-            {/* Data source badge — visible only when enabled */}
-            {showDataSource && dataSource && !loading && (
-              <div className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-mono font-semibold ${
-                dataSource === 'db' || dataSource === 'db-fallback'
-                  ? 'border-blue-500/40 bg-blue-500/10 text-blue-300'
-                  : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
-              }`}>
-                <span className={`h-1.5 w-1.5 rounded-full ${
-                  dataSource === 'db' || dataSource === 'db-fallback' ? 'bg-blue-400' : 'bg-emerald-400 animate-pulse'
-                }`} />
-                {dataSource === 'db' ? '💾 DB Cache' : dataSource === 'db-fallback' ? '💾 DB Fallback' : '🌐 Live API'}
+            {/* Combined debug panel — visible only when enabled */}
+            {showDataSource && !loading && dataSource && (
+              <div className="flex items-stretch rounded-lg border border-white/[0.10] bg-white/[0.04] overflow-hidden text-[11px] font-mono">
+                {/* Left: fetched from */}
+                <div className={`flex items-center gap-1.5 px-2.5 py-1 border-r border-white/[0.08] ${
+                  dataSource === 'live' ? 'text-emerald-300' : 'text-blue-300'
+                }`}>
+                  <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${
+                    dataSource === 'live' ? 'bg-emerald-400 animate-pulse' : 'bg-blue-400'
+                  }`} />
+                  <span className="text-zinc-500">from</span>
+                  <span className="font-semibold">
+                    {dataSource === 'live' ? 'Live API' : dataSource === 'db-fallback' ? 'DB Fallback' : 'DB Cache'}
+                  </span>
+                </div>
+                {/* Right: strategy (clickable toggle) */}
+                <button
+                  onClick={toggleDataMode}
+                  title="Click to switch strategy"
+                  className={`flex items-center gap-1.5 px-2.5 py-1 font-semibold transition-colors ${
+                    dataMode === 'db-first'
+                      ? 'text-violet-300 hover:bg-violet-500/10'
+                      : 'text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200'
+                  }`}
+                >
+                  <span className="text-zinc-500">strategy</span>
+                  <span>{dataMode === 'db-first' ? 'DB-First' : 'Cache-Aside'}</span>
+                  <svg className="h-2.5 w-2.5 opacity-50" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M5 8a1 1 0 112 0 1 1 0 01-2 0zm4 0a1 1 0 112 0 1 1 0 01-2 0z"/>
+                  </svg>
+                </button>
               </div>
-            )}
-
-            {/* Mode toggle — visible only when debug is on */}
-            {showDataSource && (
-              <button
-                onClick={toggleDataMode}
-                title={`Switch to ${dataMode === 'cache-aside' ? 'DB-First' : 'Cache-Aside'} mode`}
-                className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-mono font-semibold transition-colors ${
-                  dataMode === 'db-first'
-                    ? 'border-violet-500/40 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20'
-                    : 'border-white/10 bg-white/[0.04] text-zinc-400 hover:bg-white/10 hover:text-zinc-200'
-                }`}
-              >
-                {dataMode === 'db-first' ? '🗄️ DB-First' : '⚡ Cache-Aside'}
-              </button>
             )}
 
             {/* Debug toggle button */}
