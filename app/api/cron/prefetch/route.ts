@@ -65,7 +65,13 @@ async function fetchAlltick(code: string, interval: string, limit: number): Prom
   }));
 
   const url = `https://quote.alltick.co/quote-stock-b-api/kline?token=${token}&query=${query}`;
-  const res = await fetch(url);
+  let res: Response;
+  try {
+    res = await fetch(url);
+  } catch (e) {
+    // AllTick sometimes returns a non-standard status (e.g. 0 or >599) when throttling
+    throw new Error(`AllTick fetch error: ${e instanceof Error ? e.message : String(e)}`);
+  }
   if (!res.ok) throw new Error(`AllTick ${res.status}`);
 
   const json = await res.json();
@@ -133,8 +139,8 @@ export async function GET(req: NextRequest) {
           console.error(`[prefetch] ${market.id}/${instrument.label}/${interval} failed:`, error);
         }
 
-        // Delay between API calls to respect rate limits
-        await new Promise(r => setTimeout(r, 2000));
+        // Delay between API calls to respect rate limits (AllTick free plan is strict)
+        await new Promise(r => setTimeout(r, 5000));
       }
     }
   }
