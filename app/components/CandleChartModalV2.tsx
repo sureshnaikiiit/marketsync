@@ -144,6 +144,8 @@ export default function CandleChartModalV2({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [ohlc, setOhlc] = useState<OhlcDisplay | null>(null);
+  const [fallbackMsg, setFallbackMsg] = useState<string | null>(null);
+  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -151,6 +153,13 @@ export default function CandleChartModalV2({
   const lastCandleRef = useRef<Candle | null>(null);
   const periodMenuRef = useRef<HTMLDivElement>(null);
   const fetchSeqRef = useRef(0);
+
+  const triggerFallback = useCallback((fromInterval: string) => {
+    if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+    setFallbackMsg(`${fromInterval} data unavailable — switching to 1d`);
+    setInterval('1d');
+    fallbackTimerRef.current = setTimeout(() => setFallbackMsg(null), 4000);
+  }, []);
 
   const fetchCandles = useCallback(async () => {
     const fetchSeq = ++fetchSeqRef.current;
@@ -173,7 +182,7 @@ export default function CandleChartModalV2({
 
       // Intraday returns empty (market closed or provider error) → fall back to daily
       if (result.length === 0 && interval !== '1d') {
-        setInterval('1d');
+        triggerFallback(interval);
         return; // interval state change will re-trigger fetchCandles
       }
 
@@ -182,7 +191,7 @@ export default function CandleChartModalV2({
       if (fetchSeq !== fetchSeqRef.current) return;
       // Any intraday interval fails (e.g. 502, expired token, unsupported range) → fall back to daily
       if (interval !== '1d') {
-        setInterval('1d');
+        triggerFallback(interval);
         return;
       }
       setError(err instanceof Error ? err.message : 'Failed to load candles');
@@ -192,7 +201,7 @@ export default function CandleChartModalV2({
         setLoading(false);
       }
     }
-  }, [provider, market, code, interval, period]);
+  }, [provider, market, code, interval, period, triggerFallback]);
 
   useEffect(() => {
     fetchCandles();
@@ -201,7 +210,13 @@ export default function CandleChartModalV2({
   useEffect(() => {
     setInterval(defaultInterval);
     setPeriod(null);
+    setFallbackMsg(null);
   }, [provider, code]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Clean up fallback timer on unmount
+  useEffect(() => () => {
+    if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+  }, []);
 
   useEffect(() => {
     function onMouseDown(event: MouseEvent) {
@@ -434,6 +449,20 @@ export default function CandleChartModalV2({
             >
               x
             </button>
+          </div>
+        </div>
+
+        {/* Fallback notification toast */}
+        <div
+          className={`overflow-hidden transition-all duration-500 ease-in-out ${
+            fallbackMsg ? 'max-h-12 opacity-100' : 'max-h-0 opacity-0'
+          }`}
+        >
+          <div className="flex items-center gap-2 border-b border-amber-500/20 bg-amber-500/10 px-5 py-2.5">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 flex-shrink-0 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+            </svg>
+            <span className="text-xs font-medium text-amber-300">{fallbackMsg}</span>
           </div>
         </div>
 
