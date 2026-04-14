@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { getNewestFetchedAt, readCandles, writeCandles } from '@/lib/timescale';
+import { getDataMode } from '@/lib/data-mode';
 
 const HISTORICAL_INTERVAL_MAP: Record<string, string> = {
   '1d':  'day',
@@ -99,6 +100,8 @@ export async function GET(request: NextRequest) {
   const staleness  = STALE_MS[interval] ?? STALE_MS['1d'];
   const cutoffSec  = period ? Math.floor((Date.now() - PERIOD_MS[period]) / 1000) : 0;
 
+  const dataMode = await getDataMode();
+
   // ── Check DB cache ────────────────────────────────────────────
   // Skip DB cache for intraday+period: cached data may only cover today,
   // but the period request needs multi-day historical data.
@@ -111,7 +114,7 @@ export async function GET(request: NextRequest) {
 
       if (isFresh) {
         const rows = await readCandles('india', instrumentKey, interval, 2000, cutoffSec);
-        return NextResponse.json({ candles: rows, source: 'db' });
+        return NextResponse.json({ candles: rows, source: 'db', mode: dataMode });
       }
     } catch (e) {
       console.error('[India kline] DB read error:', e);
@@ -138,6 +141,18 @@ export async function GET(request: NextRequest) {
     console.error('[India kline] TimescaleDB write error:', e);
   }
 
+  // ── db-first mode: read back from DB after writing ────────────
+  if (dataMode === 'db-first' && !skipDbCache) {
+    try {
+      const rows = await readCandles('india', instrumentKey, interval, 2000, cutoffSec);
+      if (rows.length > 0) {
+        return NextResponse.json({ candles: rows, source: 'db', mode: dataMode });
+      }
+    } catch (e) {
+      console.error('[India kline] DB read-back error (db-first mode):', e);
+    }
+  }
+
   const filtered = cutoffSec > 0 ? candles.filter(c => c.time >= cutoffSec) : candles;
-  return NextResponse.json({ candles: filtered, source: 'live' });
+  return NextResponse.json({ candles: filtered, source: 'live', mode: dataMode });
 }

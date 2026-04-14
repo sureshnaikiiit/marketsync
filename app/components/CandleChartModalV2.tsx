@@ -145,7 +145,8 @@ export default function CandleChartModalV2({
   const [error, setError] = useState<string | null>(null);
   const [ohlc, setOhlc] = useState<OhlcDisplay | null>(null);
   const [fallbackMsg, setFallbackMsg] = useState<string | null>(null);
-  const [dataSource, setDataSource] = useState<'db' | 'live' | null>(null);
+  const [dataSource, setDataSource] = useState<'db' | 'live' | 'db-fallback' | null>(null);
+  const [dataMode, setDataMode] = useState<'cache-aside' | 'db-first'>('cache-aside');
   const [showDataSource, setShowDataSource] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem('chart_show_datasource') === 'true';
@@ -191,7 +192,8 @@ export default function CandleChartModalV2({
         return; // interval state change will re-trigger fetchCandles
       }
 
-      setDataSource(json?.source === 'db' ? 'db' : 'live');
+      setDataSource(json?.source ?? 'live');
+      if (json?.mode) setDataMode(json.mode);
       setCandles(result);
     } catch (err) {
       if (fetchSeq !== fetchSeqRef.current) return;
@@ -218,6 +220,14 @@ export default function CandleChartModalV2({
     setPeriod(null);
     setFallbackMsg(null);
   }, [provider, code]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch current server-side data mode on mount
+  useEffect(() => {
+    fetch('/api/admin/data-mode')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.mode) setDataMode(d.mode); })
+      .catch(() => {});
+  }, []);
 
   // Clean up fallback timer on unmount
   useEffect(() => () => {
@@ -376,6 +386,16 @@ export default function CandleChartModalV2({
     });
   }
 
+  async function toggleDataMode() {
+    const next = dataMode === 'cache-aside' ? 'db-first' : 'cache-aside';
+    setDataMode(next);
+    await fetch('/api/admin/data-mode', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ mode: next }),
+    });
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm"
@@ -459,19 +479,36 @@ export default function CandleChartModalV2({
             {/* Data source badge — visible only when enabled */}
             {showDataSource && dataSource && !loading && (
               <div className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-mono font-semibold ${
-                dataSource === 'db'
+                dataSource === 'db' || dataSource === 'db-fallback'
                   ? 'border-blue-500/40 bg-blue-500/10 text-blue-300'
                   : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
               }`}>
-                <span className={`h-1.5 w-1.5 rounded-full ${dataSource === 'db' ? 'bg-blue-400' : 'bg-emerald-400 animate-pulse'}`} />
-                {dataSource === 'db' ? '💾 DB Cache' : '🌐 Live API'}
+                <span className={`h-1.5 w-1.5 rounded-full ${
+                  dataSource === 'db' || dataSource === 'db-fallback' ? 'bg-blue-400' : 'bg-emerald-400 animate-pulse'
+                }`} />
+                {dataSource === 'db' ? '💾 DB Cache' : dataSource === 'db-fallback' ? '💾 DB Fallback' : '🌐 Live API'}
               </div>
             )}
 
-            {/* Toggle button */}
+            {/* Mode toggle — visible only when debug is on */}
+            {showDataSource && (
+              <button
+                onClick={toggleDataMode}
+                title={`Switch to ${dataMode === 'cache-aside' ? 'DB-First' : 'Cache-Aside'} mode`}
+                className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-mono font-semibold transition-colors ${
+                  dataMode === 'db-first'
+                    ? 'border-violet-500/40 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20'
+                    : 'border-white/10 bg-white/[0.04] text-zinc-400 hover:bg-white/10 hover:text-zinc-200'
+                }`}
+              >
+                {dataMode === 'db-first' ? '🗄️ DB-First' : '⚡ Cache-Aside'}
+              </button>
+            )}
+
+            {/* Debug toggle button */}
             <button
               onClick={toggleDataSource}
-              title={showDataSource ? 'Hide data source' : 'Show data source'}
+              title={showDataSource ? 'Hide data source debug' : 'Show data source debug'}
               className={`flex h-7 w-7 items-center justify-center rounded-full text-xs transition-colors ${
                 showDataSource ? 'bg-white/10 text-white' : 'text-zinc-600 hover:bg-white/[0.06] hover:text-zinc-400'
               }`}

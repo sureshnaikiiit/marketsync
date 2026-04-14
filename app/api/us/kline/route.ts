@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { getNewestFetchedAt, readCandles, writeCandles, type Candle } from '@/lib/timescale';
+import { getDataMode } from '@/lib/data-mode';
 
 // AllTick kline_type codes (integers = minutes; daily = 1440)
 const INTERVAL_MAP: Record<string, number> = {
@@ -258,10 +259,9 @@ export async function GET(request: NextRequest) {
   const staleness  = STALE_MS[interval] ?? STALE_MS['5m'];
   const cutoffSec  = period ? Math.floor((Date.now() - PERIOD_MS[period]) / 1000) : 0;
 
+  const dataMode = await getDataMode();
+
   // ── Check DB cache (only when no period is active) ────────────
-  // For period requests we always fetch from AllTick so the provider
-  // returns exactly `limit` candles going back from now, rather than
-  // serving a shorter cached slice that doesn't cover the full range.
   if (!period) {
     try {
       const fetchedAt = await getNewestFetchedAt(market, code, interval);
@@ -270,7 +270,7 @@ export async function GET(request: NextRequest) {
       if (isFresh) {
         const candles = await readCachedCandles(market, code, interval, limit);
         if (candles.length > 0) {
-          return NextResponse.json({ candles, source: 'db' });
+          return NextResponse.json({ candles, source: 'db', mode: dataMode });
         }
       }
     } catch (e) {
@@ -290,7 +290,7 @@ export async function GET(request: NextRequest) {
     try {
       const cachedCandles = await readCachedCandles(market, code, interval, limit, cutoffSec);
       if (cachedCandles.length > 0) {
-        return NextResponse.json({ candles: cachedCandles, source: 'db-fallback' });
+        return NextResponse.json({ candles: cachedCandles, source: 'db-fallback', mode: dataMode });
       }
     } catch (e) {
       console.error('[US kline] DB fallback read error:', e);
@@ -307,7 +307,18 @@ export async function GET(request: NextRequest) {
     console.error('[US kline] TimescaleDB write error:', e);
   }
 
-  // Filter by period cutoff before returning live data
+  // ── db-first mode: read back from DB after writing ────────────
+  if (dataMode === 'db-first' && !period) {
+    try {
+      const rows = await readCachedCandles(market, code, interval, limit, cutoffSec);
+      if (rows.length > 0) {
+        return NextResponse.json({ candles: rows, source: 'db', mode: dataMode });
+      }
+    } catch (e) {
+      console.error('[US kline] DB read-back error (db-first mode):', e);
+    }
+  }
+
   const filtered = cutoffSec > 0 ? candles.filter(c => c.time >= cutoffSec) : candles;
-  return NextResponse.json({ candles: filtered, source: 'live' });
+  return NextResponse.json({ candles: filtered, source: 'live', mode: dataMode });
 }

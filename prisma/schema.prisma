@@ -97,6 +97,14 @@ model PnlEntry {
   @@index([userId])
 }
 
+// ─── App settings (key-value store) ──────────────────────────────────────────
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
 // ─── Price alerts ─────────────────────────────────────────────────────────────
 
 /// condition: "ABOVE" | "BELOW"
