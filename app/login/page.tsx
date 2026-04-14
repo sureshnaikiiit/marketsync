@@ -120,11 +120,6 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Decorative chart — slim strip */}
-        <div className="relative z-10 shrink-0" style={{ maxHeight: 56 }}>
-          <DecorativeChart />
-        </div>
-
         {/* NSE stock ticker table — fills remaining space */}
         <div className="relative z-10 flex flex-col flex-1 min-h-0">
           <div className="flex items-center gap-2 mb-2">
