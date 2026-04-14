@@ -6,7 +6,7 @@ import MarketClock from '@/app/components/MarketClock';
 
 export default function IndiaMarketPage() {
   return (
-    <main className="min-h-screen bg-[#0d1117] text-white">
+    <main className="min-h-screen bg-[#161b27] text-white">
       <NavBar
         actions={
           <div className="flex items-center gap-3">
