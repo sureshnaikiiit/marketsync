@@ -5,7 +5,10 @@
       "Bash(powershell -Command \"Get-Process -Name node -ErrorAction SilentlyContinue | Select-Object Id, CPU, WorkingSet\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
       "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts, null, 2\\)\\)\")",
-      "Bash(npx vercel:*)"
+      "Bash(npx vercel:*)",
+      "Bash(npm install:*)",
+      "Bash(node scripts/generate-manual-pdf.mjs)",
+      "Bash(start \"\" \"c:\\\\Users\\\\SureshBabuNaikRamava\\\\OneDrive - BILVANTIS TECHNOLOGIES PRIVATE LIMITED\\\\Desktop\\\\MarketSync\\\\MarketSync-Technical-User-Manual.pdf\")"
     ]
   }
 }

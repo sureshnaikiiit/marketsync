@@ -1,0 +1,1744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MarketSync — Technical User Manual</title>
+<style>
+  /* ── Base ── */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 11pt; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #1a1a2e;
+    background: #fff;
+    line-height: 1.6;
+  }
+
+  /* ── Page breaks ── */
+  .page-break { page-break-after: always; break-after: page; }
+  .no-break   { page-break-inside: avoid; break-inside: avoid; }
+
+  /* ── Cover page ── */
+  .cover {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f4c81 100%);
+    color: #fff;
+    text-align: center;
+    padding: 60px 40px;
+  }
+  .cover .logo-circle {
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10b981, #3b82f6);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 42px; font-weight: 900;
+    color: #fff; margin-bottom: 32px;
+    box-shadow: 0 8px 32px rgba(16,185,129,0.4);
+  }
+  .cover h1 { font-size: 48px; font-weight: 800; letter-spacing: -1px; margin-bottom: 12px; }
+  .cover .subtitle { font-size: 20px; color: #94a3b8; margin-bottom: 48px; font-weight: 300; }
+  .cover .divider { width: 80px; height: 3px; background: linear-gradient(90deg, #10b981, #3b82f6); margin: 0 auto 48px; }
+  .cover .meta-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 20px; max-width: 500px; width: 100%;
+    text-align: left;
+  }
+  .cover .meta-item label { display: block; font-size: 9pt; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .cover .meta-item span  { font-size: 13pt; font-weight: 600; color: #e2e8f0; }
+  .cover .confidential {
+    margin-top: 60px; padding: 10px 24px;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px; font-size: 9pt;
+    color: #94a3b8; letter-spacing: 2px; text-transform: uppercase;
+  }
+
+  /* ── TOC ── */
+  .toc-page { padding: 60px 70px; }
+  .toc-page h2 { font-size: 28px; color: #0f4c81; margin-bottom: 32px; padding-bottom: 12px; border-bottom: 3px solid #10b981; }
+  .toc-section { margin-bottom: 6px; }
+  .toc-section a {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 0; text-decoration: none; color: #1a1a2e;
+    border-bottom: 1px dotted #cbd5e1;
+  }
+  .toc-section a:hover { color: #0f4c81; }
+  .toc-section .toc-num { color: #10b981; font-weight: 700; margin-right: 10px; }
+  .toc-section .toc-title { flex: 1; }
+  .toc-section .toc-page-num { color: #94a3b8; font-size: 10pt; }
+  .toc-sub { padding-left: 24px; }
+  .toc-sub a { font-size: 10pt; color: #475569; border-bottom: 1px dotted #e2e8f0; }
+  .toc-group { margin-bottom: 18px; }
+
+  /* ── Section pages ── */
+  .section {
+    padding: 50px 70px;
+  }
+  .section-header {
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 32px; padding-bottom: 16px;
+    border-bottom: 3px solid #10b981;
+  }
+  .section-num {
+    background: linear-gradient(135deg, #10b981, #3b82f6);
+    color: #fff; font-size: 18px; font-weight: 800;
+    width: 48px; height: 48px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .section-title { font-size: 26px; font-weight: 700; color: #0f172a; }
+  .section-desc  { font-size: 11pt; color: #64748b; margin-top: 4px; }
+
+  h3 { font-size: 15pt; color: #0f4c81; margin: 28px 0 12px; font-weight: 700; }
+  h4 { font-size: 12pt; color: #1e3a5f; margin: 20px 0 8px; font-weight: 600; }
+  p  { margin-bottom: 12px; color: #334155; }
+  ul, ol { padding-left: 22px; margin-bottom: 14px; color: #334155; }
+  li { margin-bottom: 5px; }
+  strong { color: #0f172a; }
+
+  /* ── Callout boxes ── */
+  .callout {
+    border-radius: 8px; padding: 14px 18px; margin: 16px 0;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .callout-icon { font-size: 18px; flex-shrink: 0; }
+  .callout-body { flex: 1; }
+  .callout-body strong { display: block; margin-bottom: 4px; }
+  .callout-body p { margin: 0; font-size: 10pt; }
+  .callout.info    { background: #eff6ff; border-left: 4px solid #3b82f6; }
+  .callout.success { background: #f0fdf4; border-left: 4px solid #10b981; }
+  .callout.warning { background: #fffbeb; border-left: 4px solid #f59e0b; }
+  .callout.danger  { background: #fff1f2; border-left: 4px solid #ef4444; }
+  .callout.info    .callout-body strong { color: #1d4ed8; }
+  .callout.success .callout-body strong { color: #047857; }
+  .callout.warning .callout-body strong { color: #b45309; }
+  .callout.danger  .callout-body strong { color: #dc2626; }
+
+  /* ── Tables ── */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 10pt; }
+  thead th {
+    background: linear-gradient(135deg, #0f172a, #1e3a5f);
+    color: #e2e8f0; padding: 10px 12px; text-align: left;
+    font-weight: 600; font-size: 9pt; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  thead th:first-child { border-radius: 8px 0 0 0; }
+  thead th:last-child  { border-radius: 0 8px 0 0; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  tbody tr:hover { background: #f0f9ff; }
+  tbody td { padding: 9px 12px; border-bottom: 1px solid #e2e8f0; color: #334155; vertical-align: top; }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 12px;
+    font-size: 8pt; font-weight: 600; text-transform: uppercase;
+  }
+  .badge-green  { background: #dcfce7; color: #166534; }
+  .badge-blue   { background: #dbeafe; color: #1e40af; }
+  .badge-orange { background: #fed7aa; color: #9a3412; }
+  .badge-red    { background: #fee2e2; color: #991b1b; }
+  .badge-purple { background: #ede9fe; color: #5b21b6; }
+  .badge-gray   { background: #f1f5f9; color: #475569; }
+
+  /* ── Code blocks ── */
+  code {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 9.5pt;
+    background: #f1f5f9;
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: #be185d;
+  }
+  pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin: 14px 0;
+    font-size: 9pt;
+    line-height: 1.7;
+    overflow-x: auto;
+    font-family: 'Consolas', 'Courier New', monospace;
+    border-left: 4px solid #10b981;
+  }
+  pre .comment { color: #64748b; }
+  pre .string  { color: #86efac; }
+  pre .keyword { color: #818cf8; }
+  pre .value   { color: #fbbf24; }
+
+  /* ── Flow diagram ── */
+  .flow-diagram {
+    background: #0f172a;
+    color: #e2e8f0;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 9pt;
+    padding: 24px;
+    border-radius: 10px;
+    line-height: 2;
+    margin: 16px 0;
+    border: 1px solid #1e3a5f;
+  }
+  .flow-diagram .flow-label { color: #10b981; font-weight: 700; }
+  .flow-diagram .flow-arrow { color: #3b82f6; }
+  .flow-diagram .flow-component { color: #fbbf24; }
+  .flow-diagram .flow-db { color: #a78bfa; }
+
+  /* ── Architecture diagram ── */
+  .arch-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px; margin: 20px 0;
+  }
+  .arch-card {
+    border-radius: 10px; padding: 16px;
+    border: 2px solid transparent; text-align: center;
+  }
+  .arch-card.client   { background: #eff6ff; border-color: #3b82f6; }
+  .arch-card.server   { background: #f0fdf4; border-color: #10b981; }
+  .arch-card.database { background: #fdf4ff; border-color: #a855f7; }
+  .arch-card .arch-icon { font-size: 28px; margin-bottom: 8px; }
+  .arch-card h4 { margin: 0 0 8px; font-size: 11pt; }
+  .arch-card ul { text-align: left; font-size: 9pt; padding-left: 14px; }
+
+  /* ── Env var table ── */
+  .env-table code { color: #0369a1; background: #e0f2fe; }
+
+  /* ── Step list ── */
+  .step-list { counter-reset: steps; list-style: none; padding: 0; }
+  .step-list li {
+    counter-increment: steps;
+    padding: 12px 16px 12px 54px;
+    position: relative;
+    background: #f8fafc;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border-left: 3px solid #10b981;
+  }
+  .step-list li::before {
+    content: counter(steps);
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    background: linear-gradient(135deg, #10b981, #3b82f6);
+    color: #fff; width: 26px; height: 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 10pt;
+  }
+
+  /* ── Two-column layout ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 14px 0; }
+  .col-card {
+    background: #f8fafc; border-radius: 10px; padding: 16px;
+    border: 1px solid #e2e8f0;
+  }
+  .col-card h4 { margin-top: 0; color: #0f4c81; }
+
+  /* ── Key-value row ── */
+  .kv-list { list-style: none; padding: 0; }
+  .kv-list li {
+    display: flex; gap: 12px; padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .kv-list li .key { font-weight: 600; min-width: 160px; color: #0f4c81; }
+  .kv-list li .val { color: #475569; }
+
+  /* ── Footer ── */
+  .footer-note {
+    margin-top: 40px; padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 9pt; color: #94a3b8; text-align: center;
+  }
+
+  /* ── Print / PDF ── */
+  @page {
+    margin: 0;
+    size: A4 portrait;
+  }
+  @media print {
+    .page-break { page-break-after: always; }
+    a { color: inherit; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════ COVER -->
+<div class="cover page-break">
+  <div class="logo-circle">M</div>
+  <h1>MarketSync</h1>
+  <p class="subtitle">Real-Time Multi-Market Paper Trading Platform</p>
+  <div class="divider"></div>
+
+  <div class="meta-grid">
+    <div class="meta-item">
+      <label>Document Type</label>
+      <span>Technical User Manual</span>
+    </div>
+    <div class="meta-item">
+      <label>Version</label>
+      <span>1.0.0</span>
+    </div>
+    <div class="meta-item">
+      <label>Date</label>
+      <span>April 2026</span>
+    </div>
+    <div class="meta-item">
+      <label>Framework</label>
+      <span>Next.js 16 (App Router)</span>
+    </div>
+    <div class="meta-item">
+      <label>Database</label>
+      <span>Prisma Postgres + TimescaleDB</span>
+    </div>
+    <div class="meta-item">
+      <label>Markets</label>
+      <span>India · US · Hong Kong</span>
+    </div>
+  </div>
+
+  <div class="confidential">Internal Technical Documentation</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ TOC -->
+<div class="toc-page page-break">
+  <h2>Table of Contents</h2>
+
+  <div class="toc-group">
+    <div class="toc-section">
+      <a href="#s1">
+        <span><span class="toc-num">1.</span><span class="toc-title">Introduction &amp; Overview</span></span>
+        <span class="toc-page-num">3</span>
+      </a>
+    </div>
+    <div class="toc-sub">
+      <div class="toc-section"><a href="#s1-1"><span class="toc-title">1.1 What is MarketSync?</span><span class="toc-page-num">3</span></a></div>
+      <div class="toc-section"><a href="#s1-2"><span class="toc-title">1.2 Key Features</span><span class="toc-page-num">3</span></a></div>
+      <div class="toc-section"><a href="#s1-3"><span class="toc-title">1.3 Technology Stack</span><span class="toc-page-num">3</span></a></div>
+    </div>
+  </div>
+
+  <div class="toc-group">
+    <div class="toc-section">
+      <a href="#s2">
+        <span><span class="toc-num">2.</span><span class="toc-title">System Architecture</span></span>
+        <span class="toc-page-num">4</span>
+      </a>
+    </div>
+    <div class="toc-sub">
+      <div class="toc-section"><a href="#s2-1"><span class="toc-title">2.1 High-Level Architecture</span><span class="toc-page-num">4</span></a></div>
+      <div class="toc-section"><a href="#s2-2"><span class="toc-title">2.2 Database Architecture (Dual-DB)</span><span class="toc-page-num">4</span></a></div>
+      <div class="toc-section"><a href="#s2-3"><span class="toc-title">2.3 Request Flow Diagram</span><span class="toc-page-num">5</span></a></div>
+      <div class="toc-section"><a href="#s2-4"><span class="toc-title">2.4 Project File Structure</span><span class="toc-page-num">5</span></a></div>
+    </div>
+  </div>
+
+  <div class="toc-group">
+    <div class="toc-section">
+      <a href="#s3">
+        <span><span class="toc-num">3.</span><span class="toc-title">Setup &amp; Configuration</span></span>
+        <span class="toc-page-num">6</span>
+      </a>
+    </div>
+    <div class="toc-sub">
+      <div class="toc-section"><a href="#s3-1"><span class="toc-title">3.1 Prerequisites</span><span class="toc-page-num">6</span></a></div>
+      <div class="toc-section"><a href="#s3-2"><span class="toc-title">3.2 Environment Variables</span><span class="toc-page-num">6</span></a></div>
+      <div class="toc-section"><a href="#s3-3"><span class="toc-title">3.3 Database Setup</span><span class="toc-page-num">6</span></a></div>
+      <div class="toc-section"><a href="#s3-4"><span class="toc-title">3.4 Running Locally</span><span class="toc-page-num">7</span></a></div>
+    </div>
+  </div>
+
+  <div class="toc-group">
+    <div class="toc-section">
+      <a href="#s4">
+        <span><span class="toc-num">4.</span><span class="toc-title">Authentication</span></span>
+        <span class="toc-page-num">7</span>
+      </a>
+    </div>
+    <div class="toc-sub">
+      <div class="toc-section"><a href="#s4-1"><span class="toc-title">4.1 Sign Up</span><span class="toc-page-num">7</span></a></div>
+      <div class="toc-section"><a href="#s4-2"><span class="toc-title">4.2 Login</span><span class="toc-page-num">7</span></a></div>
+      <div class="toc-section"><a href="#s4-3"><span class="toc-title">4.3 JWT &amp; Session Management</span><span class="toc-page-num">7</span></a></div>
+      <div class="toc-section"><a href="#s4-4"><span class="toc-title">4.4 Route Protection</span><span class="toc-page-num">8</span></a></div>
+    </div>
+  </div>
+
+  <div class="toc-group">
+    <div class="toc-section">
+      <a href="#s5">
+        <span><span class="toc-num">5.</span><span class="toc-title">Market Watchlists</span></span>
+        <span class="toc-page-num">8</span>
+      </a>
+    </div>
+    <div class="toc-sub">
+      <div class="toc-section"><a href="#s5-1"><span class="toc-title">5.1 India (NSE) Watchlist</span><span class="toc-page-num">8</span></a></div>
+      <div class="toc-section"><a href="#s5-2"><span class="toc-title">5.2 US Market Watchlist</span><span class="toc-page-num">9</span></a></div>
+      <div class="toc-section"><a href="#s5-3"><span class="toc-title">5.3 Hong Kong Watchlist</span><span class="toc-page-num">9</span></a></div>
+      <div class="toc-section"><a href="#s5-4"><span class="toc-title">5.4 Candlestick Charts</span><span class="toc-page-num">9</span></a></div>
+    </div>
+  </div>
+
+  <div class="toc-group">
+    <div class="toc-section">
+      <a href="#s6">
+        <span><span class="toc-num">6.</span><span class="toc-title">Paper Trading Engine</span></span>
+        <span class="toc-page-num">10</span>
+      </a>
+    </div>
+    <div class="toc-sub">
+      <div class="toc-section"><a href="#s6-1"><span class="toc-title">6.1 Placing Orders</span><span class="toc-page-num">10</span></a></div>
+      <div class="toc-section"><a href="#s6-2"><span class="toc-title">6.2 Order Types &amp; Statuses</span><span class="toc-page-num">10</span></a></div>
+      <div class="toc-section"><a href="#s6-3"><span class="toc-title">6.3 Order Execution Logic</span><span class="toc-page-num">11</span></a></div>
+    </div>
+  </div>
+
+  <div class="toc-group">
+    <div class="toc-section">
+      <a href="#s7">
+        <span><span class="toc-num">7.</span><span class="toc-title">Portfolio Management</span></span>
+        <span class="toc-page-num">11</span>
+      </a>
+    </div>
+    <div class="toc-sub">
+      <div class="toc-section"><a href="#s7-1"><span class="toc-title">7.1 Positions &amp; Holdings</span><span class="toc-page-num">11</span></a></div>
+      <div class="toc-section"><a href="#s7-2"><span class="toc-title">7.2 P&amp;L Calculation</span><span class="toc-page-num">12</span></a></div>
+    </div>
+  </div>
+
+  <div class="toc-group">
+    <div class="toc-section">
+      <a href="#s8">
+        <span><span class="toc-num">8.</span><span class="toc-title">Price Alerts</span></span>
+        <span class="toc-page-num">12</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="toc-group">
+    <div class="toc-section">
+      <a href="#s9">
+        <span><span class="toc-num">9.</span><span class="toc-title">User Profile</span></span>
+        <span class="toc-page-num">13</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="toc-group">
+    <div class="toc-section">
+      <a href="#s10">
+        <span><span class="toc-num">10.</span><span class="toc-title">API Reference</span></span>
+        <span class="toc-page-num">13</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="toc-group">
+    <div class="toc-section">
+      <a href="#s11">
+        <span><span class="toc-num">11.</span><span class="toc-title">Data Providers &amp; Market Data</span></span>
+        <span class="toc-page-num">15</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="toc-group">
+    <div class="toc-section">
+      <a href="#s12">
+        <span><span class="toc-num">12.</span><span class="toc-title">Deployment (Vercel)</span></span>
+        <span class="toc-page-num">16</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="toc-group">
+    <div class="toc-section">
+      <a href="#s13">
+        <span><span class="toc-num">13.</span><span class="toc-title">Troubleshooting</span></span>
+        <span class="toc-page-num">17</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ S1 -->
+<div id="s1" class="section page-break">
+  <div class="section-header">
+    <div class="section-num">1</div>
+    <div>
+      <div class="section-title">Introduction &amp; Overview</div>
+      <div class="section-desc">What MarketSync is and what it can do</div>
+    </div>
+  </div>
+
+  <h3 id="s1-1">1.1 What is MarketSync?</h3>
+  <p>
+    <strong>MarketSync</strong> is a full-stack, real-time multi-market trading dashboard built on Next.js 16. It lets registered users monitor live price data from three major global exchanges — India (NSE), United States (NYSE / NASDAQ), and Hong Kong (HKEX) — and execute paper trades (simulated orders) with a virtual starting balance of <strong>₹1,00,000</strong>.
+  </p>
+  <p>
+    All price data is streamed over WebSocket connections. Candlestick (OHLCV) data is persisted in a dedicated TimescaleDB time-series database for fast historical queries, while transactional user data (accounts, orders, positions, alerts) is stored in a Prisma Postgres managed PostgreSQL database.
+  </p>
+
+  <div class="callout success no-break">
+    <div class="callout-icon">✅</div>
+    <div class="callout-body">
+      <strong>Default Market: India (NSE)</strong>
+      <p>After login, users are redirected to the India watchlist. The India market and ₹ (Rupee) currency are shown by default throughout the application.</p>
+    </div>
+  </div>
+
+  <h3 id="s1-2">1.2 Key Features</h3>
+  <div class="two-col">
+    <div class="col-card">
+      <h4>📊 Live Market Data</h4>
+      <ul>
+        <li>Real-time NSE price feeds via Upstox WebSocket</li>
+        <li>US &amp; HK prices via AllTick WebSocket</li>
+        <li>Bid / Ask / Spread / Mid price display</li>
+        <li>Market status clock (timezone-aware)</li>
+        <li>Connection health badges</li>
+      </ul>
+    </div>
+    <div class="col-card">
+      <h4>📈 Candlestick Charts</h4>
+      <ul>
+        <li>Interactive OHLCV charts (lightweight-charts)</li>
+        <li>Multiple timeframes: 1m, 5m, 15m, 30m, 1h, 1d</li>
+        <li>Period filters: 1W, 1M, 3M, 6M, 1Y</li>
+        <li>TimescaleDB caching (stale-while-fresh)</li>
+        <li>Auto-fallback to daily interval when market closed</li>
+      </ul>
+    </div>
+    <div class="col-card">
+      <h4>🛒 Paper Trading</h4>
+      <ul>
+        <li>Market &amp; Limit order types</li>
+        <li>Buy / Sell with balance validation</li>
+        <li>Weighted-average cost tracking</li>
+        <li>Order history with status tracking</li>
+        <li>Multi-market order management</li>
+      </ul>
+    </div>
+    <div class="col-card">
+      <h4>💼 Portfolio &amp; P&amp;L</h4>
+      <ul>
+        <li>Live unrealized P&amp;L per position</li>
+        <li>Realized P&amp;L ledger on each sale</li>
+        <li>Total portfolio value (cash + holdings)</li>
+        <li>Market allocation breakdown</li>
+        <li>Filter by market (All / India / US / HK)</li>
+      </ul>
+    </div>
+    <div class="col-card">
+      <h4>🔔 Price Alerts</h4>
+      <ul>
+        <li>Conditions: ABOVE / BELOW / EQUAL</li>
+        <li>Actions: NOTIFY / BUY / SELL</li>
+        <li>Auto-execute orders when triggered</li>
+        <li>Full alert history &amp; status tracking</li>
+      </ul>
+    </div>
+    <div class="col-card">
+      <h4>👤 User Profile</h4>
+      <ul>
+        <li>Initials avatar with account stats</li>
+        <li>Edit display name</li>
+        <li>Change password (bcrypt-secured)</li>
+        <li>Account metadata (ID, email, join date)</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 id="s1-3">1.3 Technology Stack</h3>
+  <table>
+    <thead>
+      <tr><th>Layer</th><th>Technology</th><th>Version</th><th>Purpose</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Framework</td><td>Next.js (App Router + Turbopack)</td><td>16.2.3</td><td>Full-stack React SSR/SSG</td></tr>
+      <tr><td>UI Library</td><td>React</td><td>19.2.4</td><td>Component rendering</td></tr>
+      <tr><td>Styling</td><td>Tailwind CSS</td><td>4.x</td><td>Utility-first CSS</td></tr>
+      <tr><td>Charts</td><td>lightweight-charts</td><td>5.1.0</td><td>Candlestick &amp; line charts</td></tr>
+      <tr><td>ORM</td><td>Prisma + PrismaPg adapter</td><td>7.7.0</td><td>Relational DB queries</td></tr>
+      <tr><td>Relational DB</td><td>Prisma Postgres (cloud)</td><td>PostgreSQL 16</td><td>Users, Orders, Positions</td></tr>
+      <tr><td>Time-series DB</td><td>TimescaleDB (TigerData cloud)</td><td>PostgreSQL extension</td><td>Candle OHLCV storage</td></tr>
+      <tr><td>Auth</td><td>Jose (JWT) + bcryptjs</td><td>—</td><td>Token-based sessions</td></tr>
+      <tr><td>Market Data (India)</td><td>Upstox API (WebSocket + REST)</td><td>v2</td><td>NSE live &amp; historical data</td></tr>
+      <tr><td>Market Data (US/HK)</td><td>AllTick API (WebSocket + REST)</td><td>—</td><td>NYSE/NASDAQ/HKEX data</td></tr>
+      <tr><td>Deployment</td><td>Vercel</td><td>—</td><td>Hosting + serverless functions</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ S2 -->
+<div id="s2" class="section page-break">
+  <div class="section-header">
+    <div class="section-num">2</div>
+    <div>
+      <div class="section-title">System Architecture</div>
+      <div class="section-desc">How the components connect and communicate</div>
+    </div>
+  </div>
+
+  <h3 id="s2-1">2.1 High-Level Architecture</h3>
+  <div class="arch-grid">
+    <div class="arch-card client">
+      <div class="arch-icon">🖥️</div>
+      <h4>Browser (Client)</h4>
+      <ul>
+        <li>React components (Next.js App Router)</li>
+        <li>WebSocket streams (AllTick / Upstox)</li>
+        <li>lightweight-charts canvas</li>
+        <li>JWT cookie (httpOnly, 7-day)</li>
+      </ul>
+    </div>
+    <div class="arch-card server">
+      <div class="arch-icon">⚙️</div>
+      <h4>Next.js Server</h4>
+      <ul>
+        <li>API Route Handlers (app/api/)</li>
+        <li>proxy.ts — auth middleware</li>
+        <li>Prisma client (relational data)</li>
+        <li>pg Pool (TimescaleDB)</li>
+        <li>Paper trading engine (lib/trading.ts)</li>
+      </ul>
+    </div>
+    <div class="arch-card database">
+      <div class="arch-icon">🗄️</div>
+      <h4>Databases</h4>
+      <ul>
+        <li><strong>Prisma Postgres</strong> (db.prisma.io)</li>
+        <li>→ Users, Orders, Positions, Alerts, PnL</li>
+        <li><strong>TimescaleDB</strong> (TigerData cloud)</li>
+        <li>→ Candle OHLCV time-series</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 id="s2-2">2.2 Database Architecture (Dual-DB)</h3>
+  <p>MarketSync uses a <strong>split database strategy</strong> for optimal performance:</p>
+  <table>
+    <thead>
+      <tr><th>Database</th><th>Provider</th><th>Stores</th><th>Access Method</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Prisma Postgres</strong></td>
+        <td>Prisma Cloud (db.prisma.io)</td>
+        <td>User, Order, Position, PnlEntry, PriceAlert</td>
+        <td>Prisma ORM (<code>@prisma/client</code>)</td>
+      </tr>
+      <tr>
+        <td><strong>TimescaleDB</strong></td>
+        <td>TigerData Cloud</td>
+        <td>Candle (market, symbol, interval, time, open, high, low, close, volume)</td>
+        <td>Raw SQL via <code>pg</code> Pool (<code>lib/timescale.ts</code>)</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="callout info no-break">
+    <div class="callout-icon">ℹ️</div>
+    <div class="callout-body">
+      <strong>Why Two Databases?</strong>
+      <p>Prisma Postgres does not support the TimescaleDB extension. TimescaleDB is purpose-built for time-series data with automatic hypertable partitioning (30-day chunks), columnar compression, and fast range queries — ideal for OHLCV candle storage and retrieval.</p>
+    </div>
+  </div>
+
+  <h3 id="s2-3">2.3 Request Flow Diagram</h3>
+  <div class="flow-diagram">
+<span class="flow-label">USER</span>  →  Browser loads page (Next.js App Router)
+          │
+          ▼
+<span class="flow-component">proxy.ts</span>  [Auth Gate — runs on every request]
+  ├─ Public route? (/login, /signup, /api/auth/*)  →  PASS THROUGH
+  ├─ No ms_token cookie?  →  REDIRECT to /login
+  ├─ Invalid JWT?         →  CLEAR cookie + REDIRECT to /login
+  └─ Valid JWT            →  PASS THROUGH to destination
+          │
+          ▼
+<span class="flow-component">Next.js Page Component</span>  (Server or Client Component)
+          │
+          ├─── [Market data] WebSocket (AllTick / Upstox)
+          │         Real-time tick prices → React state → UI update
+          │
+          └─── [API Route Handler]  (app/api/**/)
+                    │
+                    ├─ Read JWT from cookie → verify → extract userId
+                    │
+                    ├─ Trading operations  →  <span class="flow-db">Prisma Postgres</span>
+                    │    User | Order | Position | PnlEntry | PriceAlert
+                    │
+                    └─ Candle data  →  <span class="flow-db">TimescaleDB</span>
+                         getNewestFetchedAt()  (cache freshness check)
+                         readCandles()         (read from hypertable)
+                         writeCandles()        (bulk INSERT via unnest())
+                         │
+                         ├─ Cache HIT + fresh  →  return DB candles
+                         └─ Cache MISS / stale →  fetch Upstox / AllTick
+                                                   →  writeCandles() to cache
+                                                   →  return live candles
+  </div>
+
+  <h3 id="s2-4">2.4 Project File Structure</h3>
+  <pre>
+MarketSync/
+├── app/
+│   ├── api/
+│   │   ├── auth/
+│   │   │   ├── login/route.ts       <span class="comment"># POST — issue JWT</span>
+│   │   │   ├── logout/route.ts      <span class="comment"># POST — clear cookie</span>
+│   │   │   ├── me/route.ts          <span class="comment"># GET  — current user</span>
+│   │   │   └── signup/route.ts      <span class="comment"># POST — register user</span>
+│   │   ├── alerts/route.ts          <span class="comment"># GET/POST alerts</span>
+│   │   ├── alerts/[id]/route.ts     <span class="comment"># PATCH/DELETE alert</span>
+│   │   ├── alerts/check/route.ts    <span class="comment"># POST — trigger check</span>
+│   │   ├── orders/route.ts          <span class="comment"># GET/POST orders</span>
+│   │   ├── orders/[id]/route.ts     <span class="comment"># GET/PATCH order</span>
+│   │   ├── portfolio/route.ts       <span class="comment"># GET portfolio summary</span>
+│   │   ├── profile/route.ts         <span class="comment"># GET/PATCH user profile</span>
+│   │   ├── india/kline/route.ts     <span class="comment"># GET India candles (Upstox)</span>
+│   │   └── us/kline/route.ts        <span class="comment"># GET US/HK candles (AllTick)</span>
+│   ├── components/
+│   │   ├── NavBar.tsx               <span class="comment"># Top navigation bar</span>
+│   │   ├── WatchList.tsx            <span class="comment"># US/HK live price table</span>
+│   │   ├── IndiaWatchList.tsx       <span class="comment"># NSE live price table</span>
+│   │   ├── CandleChartModalV2.tsx   <span class="comment"># Fullscreen chart modal</span>
+│   │   ├── MiniChart.tsx            <span class="comment"># Sparkline in watchlist rows</span>
+│   │   ├── MarketClock.tsx          <span class="comment"># Timezone-aware market clock</span>
+│   │   └── ConnectionBadge.tsx      <span class="comment"># WS connection indicator</span>
+│   ├── india/ us/ hk/               <span class="comment"># Market watchlist pages</span>
+│   ├── orders/                      <span class="comment"># Order management page</span>
+│   ├── portfolio/                   <span class="comment"># Portfolio dashboard</span>
+│   ├── alerts/                      <span class="comment"># Price alert management</span>
+│   ├── profile/                     <span class="comment"># User profile page</span>
+│   ├── login/ signup/               <span class="comment"># Auth pages</span>
+│   └── layout.tsx                   <span class="comment"># Root layout</span>
+├── lib/
+│   ├── prisma.ts                    <span class="comment"># Singleton Prisma client</span>
+│   ├── timescale.ts                 <span class="comment"># TimescaleDB helpers</span>
+│   ├── auth.ts                      <span class="comment"># JWT sign/verify</span>
+│   ├── session.ts                   <span class="comment"># Session extraction</span>
+│   ├── trading.ts                   <span class="comment"># Paper trading engine</span>
+│   ├── tick-data/                   <span class="comment"># AllTick WS manager</span>
+│   └── upstox-tick-data/            <span class="comment"># Upstox WS manager</span>
+├── config/
+│   └── markets.ts                   <span class="comment"># Market definitions</span>
+├── prisma/
+│   ├── schema.prisma                <span class="comment"># Prisma schema</span>
+│   └── migrations/                  <span class="comment"># DB migrations</span>
+├── scripts/
+│   └── init-timescale.sql           <span class="comment"># TimescaleDB setup SQL</span>
+├── proxy.ts                         <span class="comment"># Auth middleware</span>
+└── .env                             <span class="comment"># Environment variables</span>
+  </pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ S3 -->
+<div id="s3" class="section page-break">
+  <div class="section-header">
+    <div class="section-num">3</div>
+    <div>
+      <div class="section-title">Setup &amp; Configuration</div>
+      <div class="section-desc">Prerequisites, environment variables, and running the project</div>
+    </div>
+  </div>
+
+  <h3 id="s3-1">3.1 Prerequisites</h3>
+  <table>
+    <thead><tr><th>Requirement</th><th>Version</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Node.js</td><td>20+</td><td>LTS recommended</td></tr>
+      <tr><td>npm / pnpm / bun</td><td>Any</td><td>npm used in scripts</td></tr>
+      <tr><td>Prisma Postgres account</td><td>—</td><td>Free tier at prisma.io</td></tr>
+      <tr><td>TimescaleDB account</td><td>—</td><td>TigerData cloud (tigerdata.com)</td></tr>
+      <tr><td>Upstox API token</td><td>—</td><td>OAuth token for India data</td></tr>
+      <tr><td>AllTick API token</td><td>—</td><td>For US and HK market data</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="s3-2">3.2 Environment Variables</h3>
+  <p>Create a <code>.env</code> file in the project root with the following variables:</p>
+  <table class="env-table">
+    <thead><tr><th>Variable</th><th>Required</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>DATABASE_URL</code></td><td><span class="badge badge-red">Required</span></td><td>Prisma Postgres connection string (pooled)</td></tr>
+      <tr><td><code>DIRECT_DATABASE_URL</code></td><td><span class="badge badge-red">Required</span></td><td>Prisma Postgres direct connection (for migrations)</td></tr>
+      <tr><td><code>JWT_SECRET</code></td><td><span class="badge badge-red">Required</span></td><td>Secret key for JWT signing (min 32 chars)</td></tr>
+      <tr><td><code>TIMESCALE_URL</code></td><td><span class="badge badge-orange">Recommended</span></td><td>TimescaleDB connection string (candle caching)</td></tr>
+      <tr><td><code>UPSTOX_ACCESS_TOKEN</code></td><td><span class="badge badge-orange">For India</span></td><td>Bearer token from Upstox OAuth flow</td></tr>
+      <tr><td><code>NEXT_PUBLIC_ALLTICK_TOKEN</code></td><td><span class="badge badge-orange">For US/HK</span></td><td>AllTick API token (exposed to client)</td></tr>
+    </tbody>
+  </table>
+
+  <pre>
+<span class="comment"># .env example</span>
+DATABASE_URL=<span class="string">"postgres://user:pass@db.prisma.io:5432/postgres?sslmode=require"</span>
+DIRECT_DATABASE_URL=<span class="string">"postgres://user:pass@db.prisma.io:5432/postgres?sslmode=require"</span>
+JWT_SECRET=<span class="string">"your-long-random-secret-key-here-2026"</span>
+TIMESCALE_URL=<span class="string">"postgres://user:pass@your-timescale-host:5432/dbname?sslmode=require"</span>
+UPSTOX_ACCESS_TOKEN=<span class="string">"your-upstox-bearer-token"</span>
+NEXT_PUBLIC_ALLTICK_TOKEN=<span class="string">"your-alltick-token"</span>
+  </pre>
+
+  <h3 id="s3-3">3.3 Database Setup</h3>
+  <h4>Prisma Postgres (Relational Data)</h4>
+  <ol class="step-list">
+    <li>Create a project at <strong>prisma.io</strong> and copy the connection strings.</li>
+    <li>Add <code>DATABASE_URL</code> and <code>DIRECT_DATABASE_URL</code> to <code>.env</code>.</li>
+    <li>Run migrations: <code>npx prisma migrate deploy</code></li>
+    <li>Generate the Prisma client: <code>npx prisma generate</code></li>
+  </ol>
+
+  <h4>TimescaleDB (Candle Data)</h4>
+  <ol class="step-list">
+    <li>Create a TimescaleDB instance at <strong>tigerdata.com</strong> (or Timescale Cloud).</li>
+    <li>Copy the PostgreSQL connection string to <code>TIMESCALE_URL</code> in <code>.env</code>.</li>
+    <li>Initialize the Candle hypertable by running the provided SQL script:<br>
+      <code>psql "$TIMESCALE_URL" -f scripts/init-timescale.sql</code>
+    </li>
+  </ol>
+
+  <div class="callout warning no-break">
+    <div class="callout-icon">⚠️</div>
+    <div class="callout-body">
+      <strong>Candle Caching is Optional</strong>
+      <p>If <code>TIMESCALE_URL</code> is empty, the app still works — it will fetch candles from Upstox / AllTick on every request without caching. Set <code>TIMESCALE_URL</code> for production to avoid rate limits and improve chart load times.</p>
+    </div>
+  </div>
+
+  <h3 id="s3-4">3.4 Running Locally</h3>
+  <pre>
+<span class="comment"># Install dependencies</span>
+npm install
+
+<span class="comment"># Generate Prisma client</span>
+npx prisma generate
+
+<span class="comment"># Run database migrations</span>
+npx prisma migrate deploy
+
+<span class="comment"># Start development server (Turbopack)</span>
+npm run dev
+
+<span class="comment"># Production build</span>
+npm run build   <span class="comment"># = prisma generate && next build</span>
+npm start
+  </pre>
+  <p>The application will be available at <strong>http://localhost:3000</strong>. The root route (<code>/</code>) automatically redirects to <code>/india</code>.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ S4 -->
+<div id="s4" class="section page-break">
+  <div class="section-header">
+    <div class="section-num">4</div>
+    <div>
+      <div class="section-title">Authentication</div>
+      <div class="section-desc">Sign up, login, JWT sessions, and route protection</div>
+    </div>
+  </div>
+
+  <h3 id="s4-1">4.1 Sign Up</h3>
+  <p>New users register at <strong>/signup</strong>. The registration form requires:</p>
+  <ul>
+    <li><strong>Full Name</strong> — displayed in the profile avatar and navigation</li>
+    <li><strong>Email Address</strong> — must be unique; used for login</li>
+    <li><strong>Password</strong> — hashed with <code>bcryptjs</code> (10 rounds) before storage</li>
+  </ul>
+  <p>On successful registration, the user receives a <strong>₹1,00,000 starting balance</strong> and is redirected to the India watchlist.</p>
+
+  <div class="callout info no-break">
+    <div class="callout-icon">ℹ️</div>
+    <div class="callout-body">
+      <strong>Password Security</strong>
+      <p>Passwords are never stored in plain text. bcrypt hashing with a cost factor of 10 is applied before the record is written to the database. Password comparison on login uses <code>bcrypt.compare()</code>.</p>
+    </div>
+  </div>
+
+  <h3 id="s4-2">4.2 Login</h3>
+  <p>Existing users log in at <strong>/login</strong> with their email and password. On success:</p>
+  <ol>
+    <li>Server verifies the password hash with bcrypt.</li>
+    <li>A <strong>JWT token</strong> is signed using <code>JWT_SECRET</code> with a 7-day expiry.</li>
+    <li>The token is set as an <strong>httpOnly cookie</strong> named <code>ms_token</code>.</li>
+    <li>The browser is redirected to <code>/india</code>.</li>
+  </ol>
+  <p>To log out, visit any page and click the logout option in the navigation. This calls <code>POST /api/auth/logout</code> which clears the <code>ms_token</code> cookie.</p>
+
+  <h3 id="s4-3">4.3 JWT &amp; Session Management</h3>
+  <table>
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Cookie name</td><td><code>ms_token</code></td></tr>
+      <tr><td>Cookie flags</td><td>httpOnly, Secure (production), SameSite=Lax</td></tr>
+      <tr><td>Token expiry</td><td>7 days</td></tr>
+      <tr><td>JWT payload</td><td><code>{ sub: userId, email, name, iat, exp }</code></td></tr>
+      <tr><td>Signing algorithm</td><td>HS256 (HMAC-SHA256)</td></tr>
+      <tr><td>Library</td><td><code>jose</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>API route handlers extract the session using <code>lib/session.ts</code>:</p>
+  <pre>
+<span class="keyword">import</span> { getSession } from <span class="string">'@/lib/session'</span>;
+
+<span class="keyword">export async function</span> GET(request: NextRequest) {
+  const session = await getSession(request);
+  <span class="keyword">if</span> (!session) {
+    <span class="keyword">return</span> NextResponse.json({ error: <span class="string">'Unauthorized'</span> }, { status: 401 });
+  }
+  <span class="comment">// session.sub = userId</span>
+}
+  </pre>
+
+  <h3 id="s4-4">4.4 Route Protection</h3>
+  <p>The <code>proxy.ts</code> middleware intercepts every HTTP request and enforces authentication:</p>
+  <table>
+    <thead><tr><th>Route Pattern</th><th>Protection</th><th>Behaviour</th></tr></thead>
+    <tbody>
+      <tr><td><code>/login</code>, <code>/signup</code></td><td>Public</td><td>Always accessible; logged-in users are redirected to <code>/india</code></td></tr>
+      <tr><td><code>/api/auth/*</code></td><td>Public</td><td>Auth endpoints (login, signup, logout, me)</td></tr>
+      <tr><td><code>/api/upstox/*</code></td><td>Public</td><td>Upstox OAuth callback + status</td></tr>
+      <tr><td><code>/api/alerts/check</code></td><td>Public</td><td>Background alert trigger endpoint</td></tr>
+      <tr><td><code>/_next/*</code>, <code>/favicon.ico</code></td><td>Public</td><td>Static assets</td></tr>
+      <tr><td>All other routes</td><td><span class="badge badge-red">Protected</span></td><td>Requires valid <code>ms_token</code> cookie; missing/expired → redirect to <code>/login</code></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ S5 -->
+<div id="s5" class="section page-break">
+  <div class="section-header">
+    <div class="section-num">5</div>
+    <div>
+      <div class="section-title">Market Watchlists</div>
+      <div class="section-desc">Real-time price display for India, US, and Hong Kong markets</div>
+    </div>
+  </div>
+
+  <h3 id="s5-1">5.1 India (NSE) Watchlist — <code>/india</code></h3>
+  <p>The India watchlist connects to <strong>Upstox</strong> via an authorized WebSocket feed and displays live NSE prices in Indian Rupees (₹).</p>
+
+  <h4>Available Instruments</h4>
+  <table>
+    <thead><tr><th>Symbol</th><th>Company</th><th>Upstox Instrument Key</th></tr></thead>
+    <tbody>
+      <tr><td>RELIANCE</td><td>Reliance Industries</td><td><code>NSE_EQ|INE002A01018</code></td></tr>
+      <tr><td>TCS</td><td>Tata Consultancy Services</td><td><code>NSE_EQ|INE467B01029</code></td></tr>
+      <tr><td>INFY</td><td>Infosys</td><td><code>NSE_EQ|INE009A01021</code></td></tr>
+      <tr><td>HDFCBANK</td><td>HDFC Bank</td><td><code>NSE_EQ|INE040A01034</code></td></tr>
+      <tr><td>ICICIBANK</td><td>ICICI Bank</td><td><code>NSE_EQ|INE090A01021</code></td></tr>
+      <tr><td>WIPRO</td><td>Wipro</td><td><code>NSE_EQ|INE075A01022</code></td></tr>
+      <tr><td>ITC</td><td>ITC Limited</td><td><code>NSE_EQ|INE154A01025</code></td></tr>
+      <tr><td>SBIN</td><td>State Bank of India</td><td><code>NSE_EQ|INE062A01020</code></td></tr>
+    </tbody>
+  </table>
+
+  <h4>Upstox WebSocket Setup</h4>
+  <ol class="step-list">
+    <li>Click the <strong>Connect Upstox</strong> button on the India watchlist page.</li>
+    <li>Authorize the application via the Upstox OAuth flow.</li>
+    <li>An access token is stored in <code>UPSTOX_ACCESS_TOKEN</code> environment variable.</li>
+    <li>The app fetches a WebSocket URL from <code>/api/upstox/ws-url</code> and connects.</li>
+    <li>Price updates arrive as protobuf-encoded messages, decoded by <code>lib/upstox-tick-data/</code>.</li>
+  </ol>
+
+  <div class="callout warning no-break">
+    <div class="callout-icon">⚠️</div>
+    <div class="callout-body">
+      <strong>Market Hours</strong>
+      <p>NSE trading hours are 9:15 AM – 3:30 PM IST (Mon–Fri). Intraday (1m–1h) candles will be empty outside these hours. The chart auto-falls back to the 1-day interval when the market is closed.</p>
+    </div>
+  </div>
+
+  <h3 id="s5-2">5.2 US Market Watchlist — <code>/us</code></h3>
+  <p>The US watchlist connects to <strong>AllTick</strong> WebSocket and displays live NYSE/NASDAQ prices in USD ($).</p>
+  <h4>Available Instruments</h4>
+  <p>AAPL · MSFT · NVDA · TSLA · AMZN · GOOGL · META · UNH</p>
+  <p>Each instrument is identified by the AllTick code format: <code>AAPL.US</code>, <code>MSFT.US</code>, etc.</p>
+
+  <h4>Watchlist Columns</h4>
+  <ul>
+    <li><strong>Symbol</strong> — Ticker code and company name</li>
+    <li><strong>Mid Price</strong> — Average of bid and ask</li>
+    <li><strong>Bid / Ask</strong> — Best bid and ask from order book</li>
+    <li><strong>Spread</strong> — Ask minus bid</li>
+    <li><strong>Chart icon</strong> — Opens the candlestick chart modal</li>
+    <li><strong>Buy / Sell buttons</strong> — Opens the order form for that symbol</li>
+  </ul>
+
+  <h3 id="s5-3">5.3 Hong Kong Watchlist — <code>/hk</code></h3>
+  <p>Displays HKEX prices in HKD (HK$). Uses the same AllTick WebSocket connection as the US market.</p>
+  <h4>Available Instruments</h4>
+  <p>700.HK (Tencent) · 9988.HK (Alibaba) · 1299.HK (AIA Group) · 0005.HK (HSBC) · 0939.HK (CCB) · 2318.HK (Ping An) · 0388.HK (HKEX) · 1211.HK (BYD)</p>
+  <div class="callout info no-break">
+    <div class="callout-icon">ℹ️</div>
+    <div class="callout-body">
+      <strong>HK Interval Limitations</strong>
+      <p>Due to AllTick tier limitations for HKEX, only 1m, 5m, and 15m intervals are available for Hong Kong instruments. The chart automatically uses aggregation (e.g., 1m → 5m) when the provider does not support the requested interval directly.</p>
+    </div>
+  </div>
+
+  <h3 id="s5-4">5.4 Candlestick Charts</h3>
+  <p>Click the chart icon on any instrument row to open a full-screen candlestick chart modal.</p>
+
+  <h4>Chart Controls</h4>
+  <table>
+    <thead><tr><th>Control</th><th>Options</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Interval</td><td>1m · 5m · 15m · 30m · 1h · 1d</td><td>HK limited to 1m/5m/15m</td></tr>
+      <tr><td>Period</td><td>1W · 1M · 3M · 6M · 1Y</td><td>Applies a historical lookback filter</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Cache Behaviour</h4>
+  <table>
+    <thead><tr><th>Interval</th><th>Cache TTL (Stale After)</th></tr></thead>
+    <tbody>
+      <tr><td>1m</td><td>1 minute</td></tr>
+      <tr><td>5m</td><td>5 minutes</td></tr>
+      <tr><td>15m</td><td>15 minutes</td></tr>
+      <tr><td>30m</td><td>30 minutes</td></tr>
+      <tr><td>1h</td><td>1 hour</td></tr>
+      <tr><td>1d</td><td>12 hours</td></tr>
+    </tbody>
+  </table>
+  <p>When TimescaleDB is configured, the chart first checks if cached candles are fresh. If fresh, they are served from DB. If stale or absent, fresh candles are fetched from the data provider and written back to TimescaleDB.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ S6 -->
+<div id="s6" class="section page-break">
+  <div class="section-header">
+    <div class="section-num">6</div>
+    <div>
+      <div class="section-title">Paper Trading Engine</div>
+      <div class="section-desc">Placing orders, execution logic, and position tracking</div>
+    </div>
+  </div>
+
+  <h3 id="s6-1">6.1 Placing Orders</h3>
+  <p>Navigate to <strong>/orders</strong> to place trades. Orders can also be initiated by clicking <strong>Buy</strong> or <strong>Sell</strong> on any watchlist row, which pre-fills the order form.</p>
+
+  <h4>Order Form Fields</h4>
+  <ul class="kv-list">
+    <li><span class="key">Market</span><span class="val">india / us / hk</span></li>
+    <li><span class="key">Symbol</span><span class="val">Instrument code (e.g., RELIANCE, AAPL)</span></li>
+    <li><span class="key">Side</span><span class="val">BUY or SELL</span></li>
+    <li><span class="key">Order Type</span><span class="val">MARKET (execute immediately) or LIMIT (wait for price)</span></li>
+    <li><span class="key">Quantity</span><span class="val">Number of units to buy or sell</span></li>
+    <li><span class="key">Price</span><span class="val">Limit price (for LIMIT orders) or current market price (for MARKET)</span></li>
+    <li><span class="key">Notes</span><span class="val">Optional memo / strategy note</span></li>
+  </ul>
+
+  <h3 id="s6-2">6.2 Order Types &amp; Statuses</h3>
+  <div class="two-col">
+    <div class="col-card">
+      <h4>Order Types</h4>
+      <ul>
+        <li><strong>MARKET</strong> — Executes instantly at the current price. Balance is deducted / credited immediately.</li>
+        <li><strong>LIMIT</strong> — Saved as PENDING. Not executed until manually filled or a matching price trigger occurs.</li>
+      </ul>
+    </div>
+    <div class="col-card">
+      <h4>Order Statuses</h4>
+      <ul>
+        <li><span class="badge badge-orange">PENDING</span> — Awaiting execution (LIMIT)</li>
+        <li><span class="badge badge-green">FILLED</span> — Fully executed</li>
+        <li><span class="badge badge-blue">PARTIAL</span> — Partially filled</li>
+        <li><span class="badge badge-gray">CANCELLED</span> — Cancelled by user</li>
+        <li><span class="badge badge-red">REJECTED</span> — Insufficient funds or position</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 id="s6-3">6.3 Order Execution Logic</h3>
+  <p>The paper trading engine lives in <code>lib/trading.ts</code>. Here is how each trade is processed:</p>
+
+  <h4>BUY Order</h4>
+  <ol class="step-list">
+    <li>Calculate total cost: <code>quantity × price</code>.</li>
+    <li>Check user balance is sufficient. If not → REJECTED.</li>
+    <li>Deduct cost from user balance.</li>
+    <li>Create or update a <code>Position</code> record using <strong>weighted-average cost</strong>:<br>
+      <code>newAvgCost = (oldQty × oldAvgCost + newQty × price) / (oldQty + newQty)</code>
+    </li>
+    <li>Mark order as FILLED with <code>avgFillPrice</code> and <code>filledAt</code> timestamp.</li>
+  </ol>
+
+  <h4>SELL Order</h4>
+  <ol class="step-list">
+    <li>Check that a <code>Position</code> exists for this symbol with sufficient quantity. If not → REJECTED.</li>
+    <li>Credit proceeds (<code>quantity × price</code>) to user balance.</li>
+    <li>Calculate realized P&amp;L: <code>(price - avgCost) × quantity</code>.</li>
+    <li>Create a <code>PnlEntry</code> record for the realized gain/loss.</li>
+    <li>Reduce position quantity. If position reaches zero → delete position record.</li>
+    <li>Mark order as FILLED.</li>
+  </ol>
+
+  <div class="callout info no-break">
+    <div class="callout-icon">ℹ️</div>
+    <div class="callout-body">
+      <strong>No Interactive Transactions</strong>
+      <p>Prisma Postgres does not support interactive transactions via the pg adapter. All write operations are performed as sequential queries rather than wrapped in a single database transaction.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ S7 -->
+<div id="s7" class="section page-break">
+  <div class="section-header">
+    <div class="section-num">7</div>
+    <div>
+      <div class="section-title">Portfolio Management</div>
+      <div class="section-desc">View positions, track P&amp;L, and monitor total portfolio value</div>
+    </div>
+  </div>
+
+  <h3 id="s7-1">7.1 Positions &amp; Holdings</h3>
+  <p>Navigate to <strong>/portfolio</strong> to see your current holdings. The portfolio dashboard displays:</p>
+  <ul>
+    <li><strong>Cash Balance</strong> — Remaining paper money (starts at ₹1,00,000)</li>
+    <li><strong>Open Positions</strong> — Each stock held with current market value</li>
+    <li><strong>Total Portfolio Value</strong> — Cash + sum of all position market values</li>
+    <li><strong>Market Allocation</strong> — Breakdown by India / US / HK</li>
+  </ul>
+
+  <h4>Positions Table Columns</h4>
+  <table>
+    <thead><tr><th>Column</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>Symbol</td><td>Instrument code and market label</td></tr>
+      <tr><td>Quantity</td><td>Total units held</td></tr>
+      <tr><td>Avg Cost</td><td>Weighted-average purchase price</td></tr>
+      <tr><td>Current Price</td><td>Latest live price from feed</td></tr>
+      <tr><td>Market Value</td><td>quantity × current price</td></tr>
+      <tr><td>Unrealized P&amp;L</td><td>(current price − avg cost) × quantity</td></tr>
+      <tr><td>P&amp;L %</td><td>(unrealized P&amp;L / cost basis) × 100</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="s7-2">7.2 P&amp;L Calculation</h3>
+  <div class="two-col">
+    <div class="col-card">
+      <h4>Unrealized P&amp;L</h4>
+      <p>Calculated live using current market price:</p>
+      <pre style="font-size:8.5pt; padding:10px;">pnl = (price - avgCost) × qty
+pnl% = (pnl / costBasis) × 100</pre>
+      <p>Updates in real-time as prices change in the WebSocket feed. Shown in green (profit) or red (loss).</p>
+    </div>
+    <div class="col-card">
+      <h4>Realized P&amp;L</h4>
+      <p>Recorded when a SELL order executes:</p>
+      <pre style="font-size:8.5pt; padding:10px;">realizedPnl =
+  (salePrice - costBasis)
+  × quantity</pre>
+      <p>Each sale creates a permanent <code>PnlEntry</code> record. The Realized P&amp;L table shows full sell history.</p>
+    </div>
+  </div>
+
+  <h4>Portfolio API Response</h4>
+  <p><code>GET /api/portfolio</code> returns:</p>
+  <pre>
+{
+  "balance": 85000.00,          <span class="comment">// remaining cash</span>
+  "positions": [
+    {
+      "symbol": "RELIANCE",
+      "market": "india",
+      "quantity": 10,
+      "avgCost": 2450.00,
+      "currentPrice": 2510.50,  <span class="comment">// from live feed</span>
+      "marketValue": 25105.00,
+      "unrealizedPnl": 605.00,
+      "pnlPct": 2.47
+    }
+  ],
+  "pnlEntries": [...],          <span class="comment">// realized P&L history</span>
+  "totals": {
+    "costBasis": 24500.00,
+    "marketValue": 25105.00,
+    "unrealizedPnl": 605.00,
+    "totalValue": 110105.00     <span class="comment">// cash + market value</span>
+  }
+}
+  </pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ S8 -->
+<div id="s8" class="section page-break">
+  <div class="section-header">
+    <div class="section-num">8</div>
+    <div>
+      <div class="section-title">Price Alerts</div>
+      <div class="section-desc">Set price triggers for automatic notifications or trade execution</div>
+    </div>
+  </div>
+
+  <p>Navigate to <strong>/alerts</strong> to manage price alerts. Alerts monitor price levels and fire notifications or auto-execute trades when conditions are met.</p>
+
+  <h3>Creating an Alert</h3>
+  <table>
+    <thead><tr><th>Field</th><th>Options</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>Symbol</td><td>Any tracked instrument</td><td>The stock to monitor</td></tr>
+      <tr><td>Market</td><td>india / us / hk</td><td>Which exchange</td></tr>
+      <tr><td>Condition</td><td>ABOVE · BELOW · EQUAL</td><td>Price direction trigger</td></tr>
+      <tr><td>Target Price</td><td>Numeric</td><td>Price level that triggers the alert</td></tr>
+      <tr><td>Action</td><td>NOTIFY · BUY · SELL</td><td>What happens when alert fires</td></tr>
+      <tr><td>Quantity</td><td>Numeric (required for BUY/SELL)</td><td>Number of units to trade on trigger</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Alert Conditions</h3>
+  <div class="two-col">
+    <div class="col-card">
+      <h4>Trigger Logic</h4>
+      <ul>
+        <li><strong>ABOVE</strong> — fires when <code>currentPrice &gt; targetPrice</code></li>
+        <li><strong>BELOW</strong> — fires when <code>currentPrice &lt; targetPrice</code></li>
+        <li><strong>EQUAL</strong> — fires when price is within ±0.5% of target</li>
+      </ul>
+    </div>
+    <div class="col-card">
+      <h4>Alert Actions</h4>
+      <ul>
+        <li><strong>NOTIFY</strong> — browser notification (no trade)</li>
+        <li><strong>BUY</strong> — auto-executes a MARKET buy order</li>
+        <li><strong>SELL</strong> — auto-executes a MARKET sell order</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Alert Status Lifecycle</h3>
+  <table>
+    <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-green">ACTIVE</span></td><td>Monitoring — will fire when price condition is met</td></tr>
+      <tr><td><span class="badge badge-blue">TRIGGERED</span></td><td>Condition was met; action was taken. Stored for history.</td></tr>
+      <tr><td><span class="badge badge-gray">CANCELLED</span></td><td>Manually cancelled by user before triggering</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Alert Trigger Endpoint</h3>
+  <p>The endpoint <code>POST /api/alerts/check</code> accepts a price payload and evaluates all ACTIVE alerts for matching symbols. It is designed to be called by an external price-checking service or scheduled job.</p>
+
+  <pre>
+<span class="comment">// POST /api/alerts/check</span>
+{
+  <span class="string">"symbol"</span>: <span class="string">"RELIANCE"</span>,
+  <span class="string">"market"</span>: <span class="string">"india"</span>,
+  <span class="string">"price"</span>: 2500.00
+}
+  </pre>
+
+  <div class="callout warning no-break">
+    <div class="callout-icon">⚠️</div>
+    <div class="callout-body">
+      <strong>Auto-Trade Alerts</strong>
+      <p>When an alert with action BUY or SELL triggers, it executes a real paper trade on your account. Ensure your balance and positions are adequate before setting BUY/SELL alerts.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ S9 -->
+<div id="s9" class="section page-break">
+  <div class="section-header">
+    <div class="section-num">9</div>
+    <div>
+      <div class="section-title">User Profile</div>
+      <div class="section-desc">View account stats, update name, and change password</div>
+    </div>
+  </div>
+
+  <p>Navigate to <strong>/profile</strong> (or click the avatar in the top-right navigation) to manage your account.</p>
+
+  <h3>Profile Page Sections</h3>
+
+  <h4>Account Overview (Stat Cards)</h4>
+  <table>
+    <thead><tr><th>Stat Card</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>Cash Balance</td><td>Current paper money available (e.g., ₹85,000.00). Displayed on a single line with monospace font.</td></tr>
+      <tr><td>Total Orders</td><td>Cumulative count of all orders placed (all statuses)</td></tr>
+      <tr><td>Open Positions</td><td>Count of instruments currently held in portfolio</td></tr>
+      <tr><td>Active Alerts</td><td>Count of ACTIVE price alerts currently monitoring</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Edit Name</h4>
+  <p>Click the pencil icon next to your displayed name to enter edit mode. Type a new name and click <strong>Save</strong>. The JWT cookie is refreshed with the new name so the navigation avatar updates immediately.</p>
+
+  <h4>Account Details (Read-only)</h4>
+  <ul>
+    <li><strong>Email</strong> — the address used to sign up (cannot be changed)</li>
+    <li><strong>User ID</strong> — internal CUID identifier</li>
+    <li><strong>Account Type</strong> — Paper Trading Account</li>
+    <li><strong>Member Since</strong> — account creation date</li>
+  </ul>
+
+  <h4>Change Password</h4>
+  <p>The password change form requires three fields:</p>
+  <ol>
+    <li><strong>Current Password</strong> — verified against stored bcrypt hash</li>
+    <li><strong>New Password</strong> — the replacement password</li>
+    <li><strong>Confirm New Password</strong> — must match new password exactly</li>
+  </ol>
+  <p>On success, the new password hash is stored and a success message is shown. The session cookie is not invalidated (the user remains logged in).</p>
+
+  <h3>Profile API</h3>
+  <table>
+    <thead><tr><th>Endpoint</th><th>Method</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>/api/profile</code></td><td>GET</td><td>Returns user info + stats (order count, positions, active alerts)</td></tr>
+      <tr><td><code>/api/profile</code></td><td>PATCH</td><td>Update name (body: <code>{name}</code>) or password (body: <code>{currentPassword, newPassword}</code>)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ S10 -->
+<div id="s10" class="section page-break">
+  <div class="section-header">
+    <div class="section-num">10</div>
+    <div>
+      <div class="section-title">API Reference</div>
+      <div class="section-desc">All HTTP endpoints with request/response details</div>
+    </div>
+  </div>
+
+  <h3>Authentication Endpoints</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/auth/signup</code></td><td>Public</td><td>Register new user. Body: <code>{name, email, password}</code></td></tr>
+      <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/auth/login</code></td><td>Public</td><td>Authenticate. Body: <code>{email, password}</code>. Sets <code>ms_token</code> cookie.</td></tr>
+      <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/auth/logout</code></td><td>Public</td><td>Clears <code>ms_token</code> cookie.</td></tr>
+      <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/auth/me</code></td><td>Required</td><td>Returns current user info from JWT.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Order Endpoints</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/orders</code></td><td>List orders. Query: <code>?status=FILLED&amp;symbol=RELIANCE&amp;market=india</code></td></tr>
+      <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/orders</code></td><td>Place order. Body: <code>{symbol, market, label, side, orderType, quantity, price, notes?}</code></td></tr>
+      <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/orders/[id]</code></td><td>Get single order by ID.</td></tr>
+      <tr><td><span class="badge badge-orange">PATCH</span></td><td><code>/api/orders/[id]</code></td><td>Update order (e.g., fill a LIMIT order or cancel).</td></tr>
+    </tbody>
+  </table>
+
+  <h4>POST /api/orders — Request Body</h4>
+  <pre>
+{
+  <span class="string">"symbol"</span>:         <span class="string">"RELIANCE"</span>,
+  <span class="string">"market"</span>:         <span class="string">"india"</span>,
+  <span class="string">"label"</span>:          <span class="string">"RELIANCE"</span>,
+  <span class="string">"currencySymbol"</span>: <span class="string">"₹"</span>,
+  <span class="string">"side"</span>:           <span class="string">"BUY"</span>,          <span class="comment">// "BUY" | "SELL"</span>
+  <span class="string">"orderType"</span>:      <span class="string">"MARKET"</span>,       <span class="comment">// "MARKET" | "LIMIT"</span>
+  <span class="string">"quantity"</span>:       10,
+  <span class="string">"price"</span>:          2450.00,
+  <span class="string">"notes"</span>:          <span class="string">"Optional note"</span>
+}
+  </pre>
+
+  <h3>Portfolio Endpoint</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/portfolio</code></td><td>Returns balance, all positions with live P&amp;L, realized P&amp;L history, and totals.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Alert Endpoints</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/alerts</code></td><td>List alerts. Query: <code>?status=ACTIVE</code></td></tr>
+      <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/alerts</code></td><td>Create alert. Body: <code>{symbol, market, label, condition, targetPrice, action, quantity?}</code></td></tr>
+      <tr><td><span class="badge badge-orange">PATCH</span></td><td><code>/api/alerts/[id]</code></td><td>Update alert (e.g., cancel).</td></tr>
+      <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/alerts/check</code></td><td>Check &amp; trigger alerts. Body: <code>{symbol, market, price}</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Market Data (Candlestick) Endpoints</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-blue">GET</span></td>
+        <td><code>/api/india/kline</code></td>
+        <td>India candles. Query: <code>?instrumentKey=NSE_EQ|INE002A01018&amp;interval=1d&amp;period=1m</code></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-blue">GET</span></td>
+        <td><code>/api/us/kline</code></td>
+        <td>US/HK candles. Query: <code>?code=AAPL.US&amp;interval=5m&amp;period=1w&amp;market=us</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>Kline API Parameters</h4>
+  <table>
+    <thead><tr><th>Parameter</th><th>Required</th><th>Values</th></tr></thead>
+    <tbody>
+      <tr><td><code>interval</code></td><td>Yes</td><td>1m · 5m · 15m · 30m · 1h · 1d</td></tr>
+      <tr><td><code>period</code></td><td>No</td><td>1w · 1m · 3m · 6m · 1y (historical range)</td></tr>
+      <tr><td><code>market</code></td><td>US/HK only</td><td>us · hk</td></tr>
+      <tr><td><code>limit</code></td><td>No</td><td>Max candles (default: 300, max: 1500)</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Kline API Response</h4>
+  <pre>
+{
+  <span class="string">"candles"</span>: [
+    {
+      <span class="string">"time"</span>:   1713000000,   <span class="comment">// Unix timestamp (seconds)</span>
+      <span class="string">"open"</span>:   2445.00,
+      <span class="string">"high"</span>:   2460.50,
+      <span class="string">"low"</span>:    2440.00,
+      <span class="string">"close"</span>:  2455.75,
+      <span class="string">"volume"</span>: 125000
+    }
+  ],
+  <span class="string">"source"</span>: <span class="string">"db"</span>   <span class="comment">// "db" | "live" | "db-fallback"</span>
+}
+  </pre>
+
+  <h3>Profile Endpoint</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/profile</code></td><td>Returns <code>{id, name, email, balance, createdAt, stats: {orders, positions, activeAlerts}}</code></td></tr>
+      <tr><td><span class="badge badge-orange">PATCH</span></td><td><code>/api/profile</code></td><td>Update name: <code>{name}</code>. Change password: <code>{currentPassword, newPassword}</code>.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ S11 -->
+<div id="s11" class="section page-break">
+  <div class="section-header">
+    <div class="section-num">11</div>
+    <div>
+      <div class="section-title">Data Providers &amp; Market Data</div>
+      <div class="section-desc">How live prices and historical candles are sourced</div>
+    </div>
+  </div>
+
+  <h3>Provider Overview</h3>
+  <table>
+    <thead><tr><th>Market</th><th>Provider</th><th>Protocol</th><th>Data Type</th></tr></thead>
+    <tbody>
+      <tr><td>India (NSE)</td><td>Upstox</td><td>WebSocket (protobuf) + REST v2</td><td>Live ticks + historical OHLCV</td></tr>
+      <tr><td>US (NYSE/NASDAQ)</td><td>AllTick</td><td>WebSocket (JSON) + REST</td><td>Live order book + historical OHLCV</td></tr>
+      <tr><td>Hong Kong (HKEX)</td><td>AllTick</td><td>WebSocket (JSON) + REST</td><td>Live order book + historical OHLCV</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Upstox (India)</h3>
+  <h4>Live Price Feed</h4>
+  <ul>
+    <li>OAuth 2.0 authorization generates a bearer token stored as <code>UPSTOX_ACCESS_TOKEN</code>.</li>
+    <li>The token is used to request an authorized WebSocket URL from <code>/api/upstox/ws-url</code>.</li>
+    <li>Price updates arrive as <strong>protobuf-encoded</strong> binary messages, decoded by <code>lib/upstox-tick-data/</code>.</li>
+    <li>The decoded tick includes: LTP (last traded price), bid, ask, volume, OI.</li>
+  </ul>
+
+  <h4>Historical OHLCV</h4>
+  <p>Upstox provides two REST endpoints used by <code>/api/india/kline</code>:</p>
+  <table>
+    <thead><tr><th>Endpoint Type</th><th>URL Pattern</th><th>Used For</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Historical</td>
+        <td><code>/v2/historical-candle/{instrument}/{unit}/{toDate}/{fromDate}</code></td>
+        <td>Multi-day / multi-week historical data (1d, 1w, 1mo intervals)</td>
+      </tr>
+      <tr>
+        <td>Intraday</td>
+        <td><code>/v2/historical-candle/intraday/{instrument}/{unit}</code></td>
+        <td>Today's intraday candles only (1m–1h when no period specified)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout info no-break">
+    <div class="callout-icon">ℹ️</div>
+    <div class="callout-body">
+      <strong>Upstox Data Direction</strong>
+      <p>Upstox returns candles in newest-first order. The kline route reverses the array to ascending chronological order before returning or caching.</p>
+    </div>
+  </div>
+
+  <h3>AllTick (US / HK)</h3>
+  <h4>Live Price Feed</h4>
+  <ul>
+    <li>AllTick provides a single WebSocket endpoint for US and HK markets.</li>
+    <li>Messages are JSON with order book depth (bid/ask levels).</li>
+    <li>A heartbeat mechanism keeps the connection alive. Auto-reconnect on disconnect.</li>
+    <li>Up to 300 price history points are maintained per symbol for sparklines.</li>
+  </ul>
+
+  <h4>Historical OHLCV (REST)</h4>
+  <pre>
+GET https://quote.alltick.co/quote-stock-b-api/kline
+  ?token=YOUR_TOKEN
+  &amp;query={"trace":"id","data":{"code":"AAPL.US","kline_type":5,"query_kline_num":300}}
+  </pre>
+  <p><code>kline_type</code> is the interval in minutes: 1=1m, 5=5m, 15=15m, 30=30m, 60=1h, 1440=1d.</p>
+
+  <h4>Fallback Aggregation</h4>
+  <p>If AllTick does not provide the requested interval (common with HK instruments on lower API tiers), the system automatically:</p>
+  <ol>
+    <li>Fetches a finer-grained interval (e.g., 1m data for a 5m request).</li>
+    <li>Validates the cadence of returned data.</li>
+    <li>Aggregates candles into the target interval using OHLCV bucket logic.</li>
+  </ol>
+
+  <h3>TimescaleDB Candle Storage</h3>
+  <p>The <code>lib/timescale.ts</code> module manages all TimescaleDB interactions:</p>
+  <table>
+    <thead><tr><th>Function</th><th>SQL Operation</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>getNewestFetchedAt()</code></td>
+        <td><code>SELECT MAX(fetched_at)</code></td>
+        <td>Check when candles were last cached (freshness check)</td>
+      </tr>
+      <tr>
+        <td><code>readCandles()</code></td>
+        <td><code>SELECT ... WHERE time &gt;= cutoff ORDER BY time ASC LIMIT n</code></td>
+        <td>Read cached candles from hypertable</td>
+      </tr>
+      <tr>
+        <td><code>writeCandles()</code></td>
+        <td><code>INSERT ... SELECT unnest($4::integer[]),... ON CONFLICT DO NOTHING</code></td>
+        <td>Bulk insert using PostgreSQL unnest() arrays; skips duplicates</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>Candle Table Schema (TimescaleDB)</h4>
+  <pre>
+CREATE TABLE "Candle" (
+  market   TEXT    NOT NULL,    <span class="comment">-- 'india' | 'us' | 'hk'</span>
+  symbol   TEXT    NOT NULL,    <span class="comment">-- instrument code</span>
+  interval TEXT    NOT NULL,    <span class="comment">-- '1m' | '5m' | ... | '1d'</span>
+  time     INTEGER NOT NULL,    <span class="comment">-- Unix timestamp (seconds)</span>
+  open     NUMERIC NOT NULL,
+  high     NUMERIC NOT NULL,
+  low      NUMERIC NOT NULL,
+  close    NUMERIC NOT NULL,
+  volume   NUMERIC NOT NULL,
+  fetched_at TIMESTAMPTZ DEFAULT now(),
+  PRIMARY KEY (market, symbol, interval, time)
+);
+
+SELECT create_hypertable('"Candle"', 'time',
+  chunk_time_interval =&gt; 2592000);   <span class="comment">-- 30-day chunks</span>
+
+SELECT add_compression_policy('"Candle"',
+  compress_after =&gt; 7776000);        <span class="comment">-- compress after 90 days</span>
+  </pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ S12 -->
+<div id="s12" class="section page-break">
+  <div class="section-header">
+    <div class="section-num">12</div>
+    <div>
+      <div class="section-title">Deployment (Vercel)</div>
+      <div class="section-desc">Deploying MarketSync to production on Vercel</div>
+    </div>
+  </div>
+
+  <h3>Deployment Prerequisites</h3>
+  <ul>
+    <li>Vercel CLI installed: <code>npm install -g vercel</code></li>
+    <li>All databases created and initialized (Prisma Postgres + TimescaleDB)</li>
+    <li>API tokens for Upstox and AllTick obtained</li>
+  </ul>
+
+  <h3>Step-by-Step Deployment</h3>
+  <ol class="step-list">
+    <li>
+      <strong>Link to Vercel project</strong><br>
+      <code>vercel link</code> (follow prompts to connect to existing project)
+    </li>
+    <li>
+      <strong>Set environment variables via CLI</strong>
+      <pre style="margin-top:8px; font-size:8.5pt;">
+echo "postgres://..." | vercel env add DATABASE_URL production
+echo "postgres://..." | vercel env add DIRECT_DATABASE_URL production
+echo "your-jwt-secret" | vercel env add JWT_SECRET production
+echo "postgres://timescale..." | vercel env add TIMESCALE_URL production
+echo "upstox-token" | vercel env add UPSTOX_ACCESS_TOKEN production
+echo "alltick-token" | vercel env add NEXT_PUBLIC_ALLTICK_TOKEN production
+      </pre>
+    </li>
+    <li>
+      <strong>Deploy to production</strong><br>
+      <code>vercel --prod</code>
+    </li>
+  </ol>
+
+  <h3>Build Script</h3>
+  <p>The <code>package.json</code> build command is:</p>
+  <pre>
+<span class="string">"build"</span>: <span class="string">"prisma generate && next build"</span>
+  </pre>
+  <p>This ensures the Prisma client is generated from the schema before the Next.js build runs. The generated client is not committed to git — it is regenerated at build time on every deploy.</p>
+
+  <h3>Vercel Environment Variables Summary</h3>
+  <table>
+    <thead><tr><th>Variable</th><th>Environment</th><th>Source</th></tr></thead>
+    <tbody>
+      <tr><td><code>DATABASE_URL</code></td><td>Production, Preview</td><td>Prisma Cloud dashboard</td></tr>
+      <tr><td><code>DIRECT_DATABASE_URL</code></td><td>Production, Preview</td><td>Prisma Cloud dashboard</td></tr>
+      <tr><td><code>JWT_SECRET</code></td><td>Production, Preview</td><td>Self-generated (min 32 chars)</td></tr>
+      <tr><td><code>TIMESCALE_URL</code></td><td>Production</td><td>TigerData Cloud connection string</td></tr>
+      <tr><td><code>UPSTOX_ACCESS_TOKEN</code></td><td>Production</td><td>Upstox OAuth flow</td></tr>
+      <tr><td><code>NEXT_PUBLIC_ALLTICK_TOKEN</code></td><td>Production</td><td>AllTick API dashboard</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout danger no-break">
+    <div class="callout-icon">🔒</div>
+    <div class="callout-body">
+      <strong>Security Warning</strong>
+      <p><code>NEXT_PUBLIC_</code> prefixed variables are exposed to the browser. The AllTick token uses this prefix because it is needed in client-side WebSocket connections. Never use <code>NEXT_PUBLIC_</code> for sensitive secrets like JWT_SECRET or database credentials.</p>
+    </div>
+  </div>
+
+  <h3>Updating Upstox Token</h3>
+  <p>The Upstox access token expires daily. To refresh it:</p>
+  <ol>
+    <li>Complete the Upstox OAuth flow (click <strong>Connect Upstox</strong> on the India page).</li>
+    <li>The new token is received and stored server-side.</li>
+    <li>Update the <code>UPSTOX_ACCESS_TOKEN</code> in Vercel: <code>vercel env rm UPSTOX_ACCESS_TOKEN production</code> then re-add.</li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ S13 -->
+<div id="s13" class="section page-break">
+  <div class="section-header">
+    <div class="section-num">13</div>
+    <div>
+      <div class="section-title">Troubleshooting</div>
+      <div class="section-desc">Common issues and how to resolve them</div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>Symptom</th><th>Likely Cause</th><th>Solution</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Blank candlestick chart (intraday)</td>
+        <td>NSE market is closed; intraday returns no candles</td>
+        <td>Chart auto-falls back to 1d interval. This is expected behavior outside 9:15–15:30 IST.</td>
+      </tr>
+      <tr>
+        <td>HTTP 502 on chart load</td>
+        <td>Upstox / AllTick API returned an error</td>
+        <td>Chart falls back to 1d interval automatically. Check UPSTOX_ACCESS_TOKEN validity. Upstox tokens expire daily.</td>
+      </tr>
+      <tr>
+        <td>India watchlist shows no prices</td>
+        <td>Upstox token missing or expired</td>
+        <td>Click <strong>Connect Upstox</strong> button and complete OAuth. Update UPSTOX_ACCESS_TOKEN env var.</td>
+      </tr>
+      <tr>
+        <td>US/HK watchlist shows no prices</td>
+        <td>AllTick token invalid or quota exceeded</td>
+        <td>Verify NEXT_PUBLIC_ALLTICK_TOKEN in .env. Check AllTick dashboard for quota usage.</td>
+      </tr>
+      <tr>
+        <td>Prisma migration error (P3018)</td>
+        <td>A previous migration failed partially</td>
+        <td>Run <code>npx prisma migrate resolve --rolled-back &lt;migration_id&gt;</code> then retry <code>npx prisma migrate deploy</code>.</td>
+      </tr>
+      <tr>
+        <td>Module not found: ./generated/prisma/client</td>
+        <td>Prisma generate not run before build</td>
+        <td>Ensure build script is <code>"prisma generate &amp;&amp; next build"</code> in package.json.</td>
+      </tr>
+      <tr>
+        <td>Candles not caching to TimescaleDB</td>
+        <td>TIMESCALE_URL is empty or invalid</td>
+        <td>Set valid TimescaleDB connection string. Run <code>scripts/init-timescale.sql</code> to create the Candle hypertable.</td>
+      </tr>
+      <tr>
+        <td>Order rejected with "Insufficient balance"</td>
+        <td>Cash balance too low for the trade</td>
+        <td>Reduce quantity or check portfolio balance. Starting balance is ₹1,00,000 / $100,000.</td>
+      </tr>
+      <tr>
+        <td>SELL order rejected</td>
+        <td>No open position for that symbol</td>
+        <td>Ensure you have previously bought the instrument. Check /portfolio for open positions.</td>
+      </tr>
+      <tr>
+        <td>Login redirect loop</td>
+        <td>JWT_SECRET mismatch between env and stored cookies</td>
+        <td>Clear browser cookies. Ensure JWT_SECRET is consistent across deploys.</td>
+      </tr>
+      <tr>
+        <td>ConnectionBadge shows Disconnected</td>
+        <td>WebSocket connection dropped</td>
+        <td>The client auto-reconnects. If persistent, refresh the page. Check network / firewall for WSS blocking.</td>
+      </tr>
+      <tr>
+        <td>PowerShell: taskkill /PID error</td>
+        <td>Git Bash mangles /PID flag</td>
+        <td>Use: <code>powershell -Command "Stop-Process -Id &lt;PID&gt; -Force"</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Useful Commands</h3>
+  <pre>
+<span class="comment"># Check database connection</span>
+curl http://localhost:3000/api/db-test
+
+<span class="comment"># Check Upstox token status</span>
+curl http://localhost:3000/api/upstox/status
+
+<span class="comment"># View Prisma DB in browser</span>
+npx prisma studio
+
+<span class="comment"># Regenerate Prisma client</span>
+npx prisma generate
+
+<span class="comment"># Apply pending migrations</span>
+npx prisma migrate deploy
+
+<span class="comment"># View Vercel deployment logs</span>
+vercel logs
+
+<span class="comment"># List Vercel env vars</span>
+vercel env ls
+
+<span class="comment"># Redeploy to production</span>
+vercel --prod
+  </pre>
+
+  <h3>Pending Setup Items</h3>
+  <div class="callout warning no-break">
+    <div class="callout-icon">⚠️</div>
+    <div class="callout-body">
+      <strong>TimescaleDB Not Yet Configured</strong>
+      <p>As of April 2026, <code>TIMESCALE_URL</code> is set to <code>PLACEHOLDER</code> in Vercel. The app works without it (candles are fetched fresh each time) but caching is disabled. To enable:</p>
+    </div>
+  </div>
+  <ol class="step-list">
+    <li>Sign up at <strong>tigerdata.com</strong> and create a TimescaleDB service.</li>
+    <li>Copy the PostgreSQL connection string from the TigerData dashboard.</li>
+    <li>Run the initialization script: <code>psql "YOUR_TIMESCALE_URL" -f scripts/init-timescale.sql</code></li>
+    <li>Update Vercel: <code>vercel env rm TIMESCALE_URL production</code> then <code>echo "postgres://..." | vercel env add TIMESCALE_URL production</code></li>
+    <li>Update local <code>.env</code>: set <code>TIMESCALE_URL=&quot;postgres://...&quot;</code></li>
+    <li>Redeploy: <code>vercel --prod</code></li>
+  </ol>
+
+  <div class="footer-note">
+    MarketSync Technical User Manual · Version 1.0.0 · April 2026 · Internal Documentation
+  </div>
+</div>
+
+</body>
+</html>
