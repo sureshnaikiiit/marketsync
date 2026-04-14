@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { enabledMarkets } from '@/config/markets';
+import MarketSyncLogo from './MarketSyncLogo';
 
 const MARKET_TABS = enabledMarkets().map(m => ({
   href:  `/${m.id}`,
@@ -61,12 +62,7 @@ export default function NavBar({ actions }: { actions?: ReactNode }) {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
         {/* Logo */}
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-lg shadow-emerald-500/20">
-              <span className="text-xs font-black text-white">M</span>
-            </div>
-            <span className="text-sm font-semibold tracking-tight text-white">MarketSync</span>
-          </div>
+          <MarketSyncLogo size={28} showName />
 
           {/* Market dashboards */}
           <nav className="flex items-center gap-0.5">

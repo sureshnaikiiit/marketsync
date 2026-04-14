@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import MarketSyncLogo from '@/app/components/MarketSyncLogo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -35,13 +36,15 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-6">
 
         {/* Logo */}
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-lg shadow-emerald-500/30">
-            <span className="text-xl font-black text-white">M</span>
+        <div className="flex flex-col items-center gap-4">
+          <div className="drop-shadow-[0_0_22px_rgba(16,185,129,0.5)]">
+            <MarketSyncLogo size={56} />
           </div>
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-white">Welcome back</h1>
-            <p className="text-zinc-500 text-sm mt-1">Sign in to MarketSync</p>
+          <div className="text-center space-y-1">
+            <p className="text-2xl font-bold text-white tracking-tight">
+              Market<span className="text-emerald-400">Sync</span>
+            </p>
+            <p className="text-zinc-500 text-sm">Sign in to your account</p>
           </div>
         </div>
 

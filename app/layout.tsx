@@ -13,8 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MarketSync",
-  description: "Real-time market data dashboard",
+  title: { default: "MarketSync", template: "%s · MarketSync" },
+  description: "Real-time multi-market paper trading — India, US & Hong Kong",
+  icons: { icon: "/icon.svg", apple: "/icon.svg" },
 };
 
 export default function RootLayout({
