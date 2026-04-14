@@ -45,9 +45,9 @@ function SummaryCard({ label, value, sub, highlight }: { label: string; value: s
   const color = highlight === 'green' ? 'text-emerald-400' : highlight === 'red' ? 'text-red-400' : 'text-white';
   return (
     <div className="rounded-2xl border border-white/[0.08] bg-zinc-900 p-5">
-      <p className="text-xs text-zinc-500 mb-1">{label}</p>
+      <p className="text-xs text-zinc-400 font-medium mb-1 uppercase tracking-wide">{label}</p>
       <p className={`text-2xl font-mono font-bold ${color}`}>{value}</p>
-      {sub && <p className="text-xs text-zinc-500 mt-1">{sub}</p>}
+      {sub && <p className="text-xs text-zinc-400 mt-1">{sub}</p>}
     </div>
   );
 }
