@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { getNewestFetchedAt, readCandles, writeCandles, type Candle } from '@/lib/timescale';
 import { getDataMode } from '@/lib/data-mode';
 //comment
+
 // AllTick kline_type codes (integers = minutes; daily = 1440)
 const INTERVAL_MAP: Record<string, number> = {
   '1m':  1,
