@@ -79,11 +79,18 @@ function TickRow({ book, instrument, prevMid, history, currencySymbol, timezone,
         {spread !== null ? spread.toFixed(3) : '—'}
       </td>
 
-      {/* Sparkline */}
+      {/* Sparkline / chart icon */}
       <td className="px-4 py-3 w-32">
         {history.length >= 2
           ? <MiniChart data={history} positive={!down} />
-          : <div className="h-[52px] shimmer rounded bg-white/5" />}
+          : (
+            <div className="h-[52px] flex items-center justify-center rounded bg-white/[0.03] border border-white/[0.06] group-hover:border-zinc-600 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-zinc-600 group-hover:text-zinc-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4-8 4 4 4-6 4 5" />
+                <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth={1.2} />
+              </svg>
+            </div>
+          )}
       </td>
 
       {/* Updated */}
