@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MARKETS } from '@/config/markets';
 import NavBar from '@/app/components/NavBar';
+import TableSkeleton from '@/app/components/TableSkeleton';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -60,6 +61,7 @@ const ACTION_PILL: Record<string, string> = {
 export default function AlertsPage() {
   const [activeAlerts,    setActive]    = useState<Alert[]>([]);
   const [historyAlerts,   setHistory]   = useState<Alert[]>([]);
+  const [loading,         setLoading]   = useState(true);
   const [tab,             setTab]       = useState<'active' | 'history'>('active');
   const [submitting,      setSub]       = useState(false);
   const [formMsg,         setFormMsg]   = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -82,7 +84,8 @@ export default function AlertsPage() {
   const [quantity,    setQty]       = useState('');
 
   // ── Fetch ────────────────────────────────────────────────────────────────
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (initial = false) => {
+    if (initial) setLoading(true);
     const [a, h] = await Promise.all([
       fetch('/api/alerts?status=ACTIVE').then(r => r.json()),
       fetch('/api/alerts?status=TRIGGERED').then(r => r.json()),
@@ -110,11 +113,12 @@ export default function AlertsPage() {
 
     setActive(a.alerts ?? []);
     setHistory(triggered);
+    if (initial) setLoading(false);
   }, []);
 
   useEffect(() => {
-    fetchData();
-    pollRef.current = setInterval(fetchData, 5000);
+    fetchData(true);
+    pollRef.current = setInterval(() => fetchData(false), 5000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [fetchData]);
 
@@ -289,13 +293,17 @@ export default function AlertsPage() {
               ))}
             </div>
 
-            <div className="rounded-2xl border border-white/[0.08] bg-zinc-900 overflow-hidden">
-              <AlertTable
-                alerts={tab === 'active' ? activeAlerts : historyAlerts}
-                showCancel={tab === 'active'}
-                onCancel={cancelAlert}
-              />
-            </div>
+            {loading ? (
+              <TableSkeleton rows={4} cols={6} />
+            ) : (
+              <div className="rounded-2xl border border-white/[0.08] bg-zinc-900 overflow-hidden">
+                <AlertTable
+                  alerts={tab === 'active' ? activeAlerts : historyAlerts}
+                  showCancel={tab === 'active'}
+                  onCancel={cancelAlert}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

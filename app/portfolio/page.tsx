@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import TableSkeleton from '@/app/components/TableSkeleton';
 import NavBar from '@/app/components/NavBar';
 import { MARKETS } from '@/config/markets';
 
@@ -135,7 +136,7 @@ export default function PortfolioPage() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center h-64 text-zinc-500">Loading portfolio…</div>
+          <TableSkeleton rows={5} cols={8} showCards cardCount={4} />
         ) : (
           <>
             {/* ── Summary Cards ── */}

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MARKETS } from '@/config/markets';
 import NavBar from '@/app/components/NavBar';
+import TableSkeleton from '@/app/components/TableSkeleton';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -64,6 +65,7 @@ const STATUS_PILL: Record<string, string> = {
 export default function OrdersPage() {
   const [user, setUser]         = useState<User | null>(null);
   const [orders, setOrders]     = useState<Order[]>([]);
+  const [loading, setLoading]   = useState(true);
   const [tab, setTab]           = useState<'active' | 'history'>('active');
   const [marketFilter, setMF]   = useState<string>('india');
   const [submitting, setSub]    = useState(false);
@@ -80,21 +82,23 @@ export default function OrdersPage() {
   const [notes, setNotes]           = useState('');
 
   // ── Data fetch ───────────────────────────────────────────────────────────
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (initial = false) => {
+    if (initial) setLoading(true);
     const [uRes, oRes] = await Promise.all([
       fetch('/api/users'),
       fetch('/api/orders?status=all'),
     ]);
     if (uRes.ok) setUser(await uRes.json());
     if (oRes.ok) { const d = await oRes.json(); setOrders(d.orders ?? []); }
+    if (initial) setLoading(false);
   }, []);
 
   // Seed demo data once on first load (POST is idempotent — no-ops if orders exist)
   useEffect(() => { fetch('/api/users', { method: 'POST' }); }, []);
 
   useEffect(() => {
-    fetchData();
-    pollRef.current = setInterval(fetchData, 5000);
+    fetchData(true);
+    pollRef.current = setInterval(() => fetchData(false), 5000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [fetchData]);
 
@@ -355,13 +359,17 @@ export default function OrdersPage() {
               ))}
             </div>
 
-            <div className="rounded-2xl border border-white/[0.08] bg-zinc-900 overflow-hidden">
-              {tab === 'active' ? (
-                <OrderTable orders={activeOrders} showCancel onCancel={cancelOrder} />
-              ) : (
-                <OrderTable orders={historyOrders} showCancel={false} />
-              )}
-            </div>
+            {loading ? (
+              <TableSkeleton rows={5} cols={7} />
+            ) : (
+              <div className="rounded-2xl border border-white/[0.08] bg-zinc-900 overflow-hidden">
+                {tab === 'active' ? (
+                  <OrderTable orders={activeOrders} showCancel onCancel={cancelOrder} />
+                ) : (
+                  <OrderTable orders={historyOrders} showCancel={false} />
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
