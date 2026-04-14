@@ -96,7 +96,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex bg-zinc-950">
+    <div className="min-h-screen flex" style={{ background: 'linear-gradient(135deg, #0a0f1e 0%, #0d1f12 60%, #071a2e 100%)' }}>
 
       {/* ══════════ LEFT — Market showcase ══════════ */}
       <div className="hidden lg:flex lg:flex-1 relative overflow-hidden flex-col p-8 gap-4"
