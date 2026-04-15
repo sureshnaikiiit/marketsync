@@ -302,8 +302,7 @@ export async function GET(request: NextRequest) {
 
   // ── Persist to TimescaleDB ────────────────────────────────────
   try {
-    const count = await writeCandles(market, code, interval, candles);
-    console.log(`[${market.toUpperCase()} kline] Inserted ${count} new candles for ${code}/${interval}`);
+    await writeCandles(market, code, interval, candles);
   } catch (e) {
     console.error('[US kline] TimescaleDB write error:', e);
   }

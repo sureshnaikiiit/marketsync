@@ -135,8 +135,7 @@ export async function GET(request: NextRequest) {
 
   // ── Persist to TimescaleDB ────────────────────────────────────
   try {
-    const count = await writeCandles('india', instrumentKey, interval, candles);
-    console.log(`[India kline] Inserted ${count} new candles for ${instrumentKey}/${interval}`);
+    await writeCandles('india', instrumentKey, interval, candles);
   } catch (e) {
     console.error('[India kline] TimescaleDB write error:', e);
   }

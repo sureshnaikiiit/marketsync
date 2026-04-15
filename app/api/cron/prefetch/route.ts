@@ -132,7 +132,6 @@ export async function GET(req: NextRequest) {
             : 0;
 
           results.push({ market: market.id, code: instrument.label, interval, inserted });
-          console.log(`[prefetch] ${market.id}/${instrument.label}/${interval} → ${inserted} rows`);
         } catch (err) {
           const error = err instanceof Error ? err.message : String(err);
           results.push({ market: market.id, code: instrument.label, interval, inserted: 0, error });
