@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import TableSkeleton from '@/app/components/TableSkeleton';
 import NavBar from '@/app/components/NavBar';
 import { MARKETS } from '@/config/markets';
+import { useUpstox } from '@/lib/upstox-tick-data';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -78,16 +79,59 @@ export default function PortfolioPage() {
 
   useEffect(() => {
     fetchData();
-    pollRef.current = setInterval(fetchData, 10_000);
+    pollRef.current = setInterval(fetchData, 60_000); // 60s — server only needed for candle fallback
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [fetchData]);
+
+  // ── Live price overlay via Upstox WebSocket ───────────────────────────────
+  const { ticks: upstoxTicks, subscribe, status: wsStatus } = useUpstox();
+
+  // Build label→instrumentCode map for India positions stored with short labels
+  const { labelToCode } = useMemo(() => {
+    const indiaMarket = MARKETS.find(m => m.id === 'india');
+    const labelToCode: Record<string, string> = {};
+    for (const inst of indiaMarket?.instruments ?? []) {
+      labelToCode[inst.label] = inst.code;
+    }
+    return { labelToCode };
+  }, []);
+
+  // Resolve the Upstox instrument key for a position
+  const resolveKey = useCallback((symbol: string, label: string): string => {
+    if (symbol.includes('|')) return symbol;
+    return labelToCode[label] ?? labelToCode[symbol] ?? '';
+  }, [labelToCode]);
+
+  // Subscribe to all India instruments once the WebSocket is connected
+  useEffect(() => {
+    if (wsStatus !== 'connected' || positions.length === 0) return;
+    const keys = positions
+      .filter(p => p.market === 'india')
+      .map(p => resolveKey(p.symbol, p.label))
+      .filter(k => k !== '');
+    if (keys.length > 0) subscribe(keys, 'ltpc');
+  }, [wsStatus, positions, subscribe, resolveKey]);
+
+  // Merge live WebSocket LTPs into positions; recompute P&L on every tick
+  const livePositions = useMemo(() => positions.map(pos => {
+    if (pos.market !== 'india') return pos;
+    const key = resolveKey(pos.symbol, pos.label);
+    const ltp = key ? upstoxTicks[key]?.ltp : undefined;
+    if (!ltp) return pos; // keep server-computed price (candle close or avgCost)
+    const currentPrice  = ltp;
+    const marketValue   = currentPrice * pos.quantity;
+    const costValue     = pos.avgCost  * pos.quantity;
+    const unrealizedPnl = marketValue - costValue;
+    const unrealizedPct = costValue > 0 ? (unrealizedPnl / costValue) * 100 : 0;
+    return { ...pos, currentPrice, marketValue, unrealizedPnl, unrealizedPct };
+  }), [positions, upstoxTicks, resolveKey]);
 
   // ── Market-filtered data ──────────────────────────────────────────────────
   const selectedMarket  = MARKETS.find(m => m.id === marketFilter);
   const cs              = selectedMarket?.currencySymbol ?? '$';
 
-  const filteredPositions  = marketFilter === 'all' ? positions  : positions.filter(p => p.market === marketFilter);
-  const filteredPnlEntries = marketFilter === 'all' ? pnlEntries : pnlEntries.filter(e => e.market === marketFilter);
+  const filteredPositions  = marketFilter === 'all' ? livePositions  : livePositions.filter(p => p.market === marketFilter);
+  const filteredPnlEntries = marketFilter === 'all' ? pnlEntries  : pnlEntries.filter(e => e.market === marketFilter);
 
   const totalMarketValue   = filteredPositions.reduce((s, p) => s + p.marketValue,            0);
   const totalCostBasis     = filteredPositions.reduce((s, p) => s + p.avgCost * p.quantity,   0);
