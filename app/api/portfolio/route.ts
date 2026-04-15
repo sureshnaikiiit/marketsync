@@ -64,22 +64,50 @@ export async function GET(request: NextRequest) {
   const allIndiaKeys = indiaMarket?.instruments.map(i => i.code) ?? [];
   const indiaLtps = await fetchUpstoxLtps(allIndiaKeys);
 
-  // Build a label→price map so we can match positions stored with short labels
+  // Build label→LTP and label→instrumentCode maps for positions stored
+  // with short labels (e.g. "SBIN") instead of full instrument keys
   const labelToLtp: Record<string, number> = {};
+  const labelToCode: Record<string, string> = {};
   if (indiaMarket) {
     for (const inst of indiaMarket.instruments) {
+      labelToCode[inst.label] = inst.code;
       const ltp = indiaLtps[inst.code];
       if (ltp) labelToLtp[inst.label] = ltp;
     }
   }
 
-  // For each position, use live LTP (India) or latest candle close (US/HK)
+  // Resolve the canonical instrument code for an India position
+  // (handles both full-key and short-label stored symbols)
+  function resolveIndiaCode(pos: { symbol: string; label: string }): string {
+    if (pos.symbol.includes('|')) return pos.symbol;           // already a full key
+    return labelToCode[pos.label] ?? labelToCode[pos.symbol] ?? pos.symbol;
+  }
+
+  // For each position, use live LTP (India) or latest candle close (US/HK).
+  // When market is closed (LTP empty), fall back to the candle cache so we
+  // still show P&L vs the last known close rather than vs avgCost.
   const enriched = await Promise.all(positions.map(async (pos) => {
     let currentPrice = pos.avgCost;
     if (pos.market === 'india') {
-      // Try full instrument key first, fall back to label match
+      // 1. Try live LTP (works during market hours)
       const ltp = indiaLtps[pos.symbol] ?? labelToLtp[pos.label] ?? labelToLtp[pos.symbol];
-      if (ltp) currentPrice = ltp;
+      if (ltp) {
+        currentPrice = ltp;
+      } else {
+        // 2. Market closed / token expired — use last candle close from cache
+        try {
+          const code = resolveIndiaCode(pos);
+          const candles = await readCandles('india', code, '1d', 2);
+          // Skip today's in-progress partial candle (same logic as india-preview)
+          const istOffsetMs = 5.5 * 60 * 60 * 1000;
+          const todayUnixSecs = Math.floor(
+            (Math.floor((Date.now() + istOffsetMs) / 86_400_000) * 86_400_000 - istOffsetMs) / 1000,
+          );
+          const completed = candles.filter(c => c.time < todayUnixSecs);
+          const best = completed[completed.length - 1] ?? candles[candles.length - 1];
+          if (best) currentPrice = best.close;
+        } catch { /* remain at avgCost */ }
+      }
     } else {
       try {
         const candles = await readCandles(pos.market, pos.symbol, '1d', 1);
