@@ -1,9 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MARKETS } from '@/config/markets';
 import NavBar from '@/app/components/NavBar';
 import TableSkeleton from '@/app/components/TableSkeleton';
+import { useUpstox } from '@/lib/upstox-tick-data';
+import { useTickData } from '@/lib/tick-data';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -81,6 +83,46 @@ export default function OrdersPage() {
   const [priceAutoFilled, setPriceAutoFilled] = useState(false);
   const [notes, setNotes]           = useState('');
 
+  // ── Live tick hooks ──────────────────────────────────────────────────────
+  const {
+    ticks: upstoxTicks,
+    isAuthenticated: upstoxAuth,
+    status: upstoxStatus,
+    subscribe: upstoxSubscribe,
+  } = useUpstox();
+  const {
+    ticks: allTicks,
+    orderBooks,
+    status: allTickStatus,
+    subscribe: allTickSubscribe,
+  } = useTickData();
+
+  // Subscribe to selected instrument when connection is ready
+  useEffect(() => {
+    if (selected.market !== 'india') return;
+    if (!upstoxAuth || upstoxStatus !== 'connected') return;
+    upstoxSubscribe([selected.code], 'full');
+  }, [selected.code, selected.market, upstoxAuth, upstoxStatus, upstoxSubscribe]);
+
+  useEffect(() => {
+    if (selected.market === 'india') return;
+    if (allTickStatus !== 'connected') return;
+    allTickSubscribe([selected.code]);
+  }, [selected.code, selected.market, allTickStatus, allTickSubscribe]);
+
+  // Derive live price from whichever WebSocket has data for the selected instrument
+  const livePrice = useMemo(() => {
+    if (selected.market === 'india') {
+      return upstoxTicks[selected.code]?.ltp ?? null;
+    }
+    // US / HK: prefer mid-price from order book, fall back to last tick
+    const ob = orderBooks[selected.code];
+    if (ob?.bids[0] && ob?.asks[0]) {
+      return (ob.bids[0].price + ob.asks[0].price) / 2;
+    }
+    return allTicks[selected.code]?.price ?? null;
+  }, [selected.code, selected.market, upstoxTicks, orderBooks, allTicks]);
+
   // ── Data fetch ───────────────────────────────────────────────────────────
   const fetchData = useCallback(async (initial = false) => {
     if (initial) setLoading(true);
@@ -102,13 +144,22 @@ export default function OrdersPage() {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [fetchData]);
 
-  // ── Auto-fill price for MARKET orders ───────────────────────────────────
+  // ── Auto-fill price for MARKET orders (live first, kline fallback) ──────
   useEffect(() => {
     if (orderType !== 'MARKET') return;
+
+    // Live price available — keep it updated in real-time
+    if (livePrice !== null) {
+      setPrice(livePrice.toFixed(2));
+      setPriceAutoFilled(true);
+      return;
+    }
+
+    // No live price yet (market closed / WebSocket not connected) — fetch last daily close
     setPrice('');
     setPriceAutoFilled(false);
     let cancelled = false;
-    async function fetchLatestPrice() {
+    async function fetchFallbackPrice() {
       try {
         const market = selected.market;
         const url = market === 'india'
@@ -124,9 +175,9 @@ export default function OrdersPage() {
         }
       } catch { /* silently ignore */ }
     }
-    fetchLatestPrice();
+    fetchFallbackPrice();
     return () => { cancelled = true; };
-  }, [selected, orderType, side]);
+  }, [selected, orderType, side, livePrice]);
 
   // ── Submit order ─────────────────────────────────────────────────────────
   async function submitOrder(e: React.FormEvent) {
@@ -265,10 +316,16 @@ export default function OrdersPage() {
               <div>
                 <label className="text-xs text-zinc-400 mb-1 flex items-center gap-1.5">
                   {orderType === 'LIMIT' ? 'Limit Price' : 'Execution Price'}
-                  {orderType === 'MARKET' && priceAutoFilled && (
-                    <span className="text-emerald-600 font-medium">· auto-filled</span>
+                  {orderType === 'MARKET' && livePrice !== null && (
+                    <span className="inline-flex items-center gap-1 text-emerald-500 font-medium">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      live
+                    </span>
                   )}
-                  {orderType === 'MARKET' && !priceAutoFilled && (
+                  {orderType === 'MARKET' && livePrice === null && priceAutoFilled && (
+                    <span className="text-zinc-500 font-medium">· last close</span>
+                  )}
+                  {orderType === 'MARKET' && livePrice === null && !priceAutoFilled && (
                     <span className="text-zinc-600">· fetching…</span>
                   )}
                 </label>
@@ -277,10 +334,13 @@ export default function OrdersPage() {
                     {selected.currencySymbol}
                   </span>
                   <input type="number" min="0.01" step="0.01" value={price}
-                    onChange={e => { setPrice(e.target.value); setPriceAutoFilled(false); }}
+                    onChange={e => { if (orderType === 'LIMIT') { setPrice(e.target.value); setPriceAutoFilled(false); } }}
+                    readOnly={orderType === 'MARKET'}
                     required
                     placeholder="0.00"
-                    className="w-full rounded-lg bg-zinc-800 border border-white/[0.08] pl-8 pr-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/20 placeholder:text-zinc-600"
+                    className={`w-full rounded-lg bg-zinc-800 border border-white/[0.08] pl-8 pr-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/20 placeholder:text-zinc-600 ${
+                      orderType === 'MARKET' ? 'cursor-default select-none' : ''
+                    }`}
                   />
                 </div>
               </div>
