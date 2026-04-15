@@ -16,10 +16,12 @@ export async function GET() {
 
   try {
     // Fetch the last 2 daily candles for each instrument so we can compute change
+    let latestFetchedAt: Date | null = null;
+
     const stocks: (PreviewStock | null)[] = await Promise.all(
       indiaMarket.instruments.map(async (inst) => {
-        const { rows } = await tsPool.query<{ time: number; close: number }>(
-          `SELECT time, close FROM "Candle"
+        const { rows } = await tsPool.query<{ time: number; close: number; fetchedAt: Date }>(
+          `SELECT time, close, "fetchedAt" FROM "Candle"
            WHERE market = 'india' AND symbol = $1 AND interval = '1d'
            ORDER BY time DESC LIMIT 2`,
           [inst.code],
@@ -33,6 +35,10 @@ export async function GET() {
         const change = price - prev.close;
         const pct    = prev.close > 0 ? (change / prev.close) * 100 : 0;
 
+        if (!latestFetchedAt || latest.fetchedAt > latestFetchedAt) {
+          latestFetchedAt = latest.fetchedAt;
+        }
+
         return { symbol: inst.label, name: inst.name, price, change, pct };
       }),
     );
@@ -40,7 +46,7 @@ export async function GET() {
     const valid = stocks.filter(Boolean) as PreviewStock[];
 
     return NextResponse.json(
-      { stocks: valid, updatedAt: new Date().toISOString() },
+      { stocks: valid, fetchedAt: latestFetchedAt ?? new Date() },
       { headers: { 'Cache-Control': 's-maxage=300, stale-while-revalidate=60' } },
     );
   } catch (e) {

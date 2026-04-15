@@ -76,17 +76,24 @@ export default function LoginPage() {
   const [error,    setError]    = useState('');
   const [loading,  setLoading]  = useState(false);
   const [success,  setSuccess]  = useState(false);
-  const [stocks,   setStocks]   = useState<PreviewStock[]>(FALLBACK_STOCKS);
-  const [dataLive, setDataLive] = useState(false);
+  const [stocks,    setStocks]    = useState<PreviewStock[]>(FALLBACK_STOCKS);
+  const [fetchedAt, setFetchedAt] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/public/india-preview')
       .then(r => r.json())
-      .then((d: { stocks: PreviewStock[] }) => {
-        if (d.stocks?.length > 0) { setStocks(d.stocks); setDataLive(true); }
+      .then((d: { stocks: PreviewStock[]; fetchedAt?: string }) => {
+        if (d.stocks?.length > 0) {
+          setStocks(d.stocks);
+          if (d.fetchedAt) setFetchedAt(d.fetchedAt);
+        }
       })
       .catch(() => { /* keep fallback */ });
   }, []);
+
+  const fetchedLabel = fetchedAt
+    ? new Date(fetchedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata', hour12: false }) + ' IST'
+    : null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -154,9 +161,9 @@ export default function LoginPage() {
         {/* NSE stock ticker table — fills remaining space */}
         <div className="relative z-10 flex flex-col flex-1 min-h-0">
           <div className="flex items-center gap-2 mb-2">
-            <span className={`h-1.5 w-1.5 rounded-full ${dataLive ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-600'}`} />
+            <span className={`h-1.5 w-1.5 rounded-full ${fetchedLabel ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-600'}`} />
             <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">
-              NSE · {dataLive ? 'Live Data' : 'Last Session'}
+              NSE · {fetchedLabel ? `Updated ${fetchedLabel}` : 'Loading…'}
             </span>
           </div>
 
@@ -193,7 +200,7 @@ export default function LoginPage() {
           </div>
 
           <p className="mt-1.5 text-center text-zinc-700 text-[10px]">
-            {dataLive ? 'Updated every 5 minutes via cron' : 'Data shown is from the last trading session'}
+            {fetchedLabel ? 'Refreshed every 5 minutes' : 'Fetching latest session data…'}
           </p>
         </div>
       </div>
