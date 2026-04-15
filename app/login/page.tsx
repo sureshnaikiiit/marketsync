@@ -80,15 +80,21 @@ export default function LoginPage() {
   const [fetchedAt, setFetchedAt] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/public/india-preview')
-      .then(r => r.json())
-      .then((d: { stocks: PreviewStock[]; fetchedAt?: string }) => {
-        if (d.stocks?.length > 0) {
-          setStocks(d.stocks);
-          if (d.fetchedAt) setFetchedAt(d.fetchedAt);
-        }
-      })
-      .catch(() => { /* keep fallback */ });
+    function loadPreview() {
+      fetch('/api/public/india-preview')
+        .then(r => r.json())
+        .then((d: { stocks: PreviewStock[]; fetchedAt?: string }) => {
+          if (d.stocks?.length > 0) {
+            setStocks(d.stocks);
+            if (d.fetchedAt) setFetchedAt(d.fetchedAt);
+          }
+        })
+        .catch(() => { /* keep fallback */ });
+    }
+
+    loadPreview();
+    const timer = setInterval(loadPreview, 5 * 60 * 1000); // re-fetch every 5 min
+    return () => clearInterval(timer);
   }, []);
 
   const fetchedLabel = fetchedAt

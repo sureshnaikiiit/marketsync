@@ -47,7 +47,7 @@ export async function GET() {
 
     return NextResponse.json(
       { stocks: valid, fetchedAt: latestFetchedAt ?? new Date() },
-      { headers: { 'Cache-Control': 's-maxage=300, stale-while-revalidate=60' } },
+      { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (e) {
     console.error('[india-preview] DB error:', e);
