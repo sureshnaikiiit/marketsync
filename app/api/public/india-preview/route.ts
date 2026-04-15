@@ -66,25 +66,35 @@ export async function GET() {
     const ltps = await fetchLtps(indiaMarket.instruments.map(i => i.code));
     const isLive = Object.keys(ltps).length > 0;
 
-    // 2. Read the last 2 daily candles per instrument from DB for prev-close
+    // Today's midnight in IST (UTC+5:30). Any candle with time >= this is
+    // today's in-progress partial candle — must be excluded from prev-close base.
+    const istOffsetMs   = 5.5 * 60 * 60 * 1000;
+    const todayUnixSecs = Math.floor(
+      (Math.floor((Date.now() + istOffsetMs) / 86_400_000) * 86_400_000 - istOffsetMs) / 1000,
+    );
+
+    // 2. Read the last 3 daily candles per instrument (extra row in case today's partial is present)
     const stocks: (PreviewStock | null)[] = await Promise.all(
       indiaMarket.instruments.map(async (inst) => {
         const { rows } = await tsPool.query<{ time: number; close: number }>(
           `SELECT time, close FROM "Candle"
            WHERE market = 'india' AND symbol = $1 AND interval = '1d'
-           ORDER BY time DESC LIMIT 2`,
+           ORDER BY time DESC LIMIT 3`,
           [inst.code],
         );
 
         if (rows.length === 0) return null;
 
-        // If live LTP available: price = LTP, change vs yesterday's DB close
-        // If market closed / token expired: price = yesterday's close, change vs day-before
-        const prevClose = rows[0].close;          // most recent completed day
-        const dayBefore = (rows[1] ?? rows[0]).close;
+        // Skip today's partial candle (Upstox returns it during market hours
+        // with close ≈ current LTP, which would make change = 0).
+        const completedRows = rows.filter(r => r.time < todayUnixSecs);
+        const prevDayRow  = completedRows[0] ?? rows[0]; // most recent completed day
+        const dayBeforeRow = completedRows[1] ?? prevDayRow; // day before that
 
-        const price  = ltps[inst.code] ?? prevClose;
-        const base   = isLive ? prevClose : dayBefore;
+        // If live LTP available: price = LTP, change vs prev completed day's close
+        // If market closed / token expired: price = prev day's close, change vs day-before
+        const price  = ltps[inst.code] ?? prevDayRow.close;
+        const base   = isLive ? prevDayRow.close : dayBeforeRow.close;
         const change = price - base;
         const pct    = base > 0 ? (change / base) * 100 : 0;
 
