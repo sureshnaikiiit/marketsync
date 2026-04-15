@@ -261,8 +261,7 @@ export default function OrdersPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6">
 
-          {/* ── Order Form + Holdings ── */}
-          <div className="space-y-4">
+          {/* ── Order Form ── */}
           <div className="rounded-2xl border border-white/[0.08] bg-zinc-900 p-6 space-y-5 h-fit">
             <h2 className="font-semibold text-white">Place Order</h2>
 
@@ -401,27 +400,6 @@ export default function OrdersPage() {
             </form>
           </div>
 
-          {/* ── Holdings Summary ── */}
-          {holdings.length > 0 && (
-            <div className="rounded-2xl border border-white/[0.08] bg-zinc-900 p-5">
-              <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-3">Current Holdings</p>
-              <div className="space-y-1">
-                {holdings.map(h => (
-                  <div key={h.symbol} className="flex items-center justify-between py-1.5 border-b border-white/[0.04] last:border-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-white text-sm">{h.label}</span>
-                      <span className="text-[10px] text-zinc-600 uppercase">{h.market}</span>
-                    </div>
-                    <span className="font-mono text-sm text-emerald-400 font-semibold">
-                      {h.quantity % 1 === 0 ? h.quantity : h.quantity.toFixed(4)} shares
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          </div>
-
           {/* ── Order Tables ── */}
           <div className="space-y-4">
 
@@ -466,6 +444,29 @@ export default function OrdersPage() {
                 ) : (
                   <OrderTable orders={historyOrders} showCancel={false} />
                 )}
+              </div>
+            )}
+
+            {/* ── Holdings Summary ── */}
+            {!loading && holdings.length > 0 && (
+              <div className="rounded-2xl border border-white/[0.08] bg-zinc-900 p-5">
+                <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-3">Current Holdings</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {holdings.map(h => (
+                    <div key={h.symbol} className="flex items-center justify-between rounded-xl bg-zinc-800/60 border border-white/[0.05] px-3 py-2.5">
+                      <div>
+                        <p className="font-mono font-bold text-white text-sm">{h.label}</p>
+                        <p className="text-[10px] text-zinc-600 uppercase mt-0.5">{h.market}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-mono text-sm text-emerald-400 font-semibold">
+                          {h.quantity % 1 === 0 ? h.quantity : h.quantity.toFixed(4)}
+                        </p>
+                        <p className="text-[10px] text-zinc-600">shares</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
