@@ -217,6 +217,20 @@ export default function OrdersPage() {
     fetchData();
   }
 
+  // Compute net holdings from all filled orders (BUY adds, SELL subtracts)
+  const holdings = useMemo(() => {
+    const map: Record<string, { label: string; market: string; currencySymbol: string; quantity: number }> = {};
+    for (const o of orders) {
+      if (o.status !== 'FILLED') continue;
+      if (!map[o.symbol]) map[o.symbol] = { label: o.label, market: o.market, currencySymbol: o.currencySymbol, quantity: 0 };
+      map[o.symbol].quantity += o.side === 'BUY' ? o.filledQty : -o.filledQty;
+    }
+    return Object.entries(map)
+      .map(([symbol, d]) => ({ symbol, ...d }))
+      .filter(h => h.quantity > 0.0001)
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [orders]);
+
   const filteredInstruments = marketFilter === 'all'
     ? ALL_INSTRUMENTS
     : ALL_INSTRUMENTS.filter(i => i.market === marketFilter);
@@ -247,7 +261,8 @@ export default function OrdersPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6">
 
-          {/* ── Order Form ── */}
+          {/* ── Order Form + Holdings ── */}
+          <div className="space-y-4">
           <div className="rounded-2xl border border-white/[0.08] bg-zinc-900 p-6 space-y-5 h-fit">
             <h2 className="font-semibold text-white">Place Order</h2>
 
@@ -384,6 +399,27 @@ export default function OrdersPage() {
                 {submitting ? 'Placing…' : `Place ${side} Order`}
               </button>
             </form>
+          </div>
+
+          {/* ── Holdings Summary ── */}
+          {holdings.length > 0 && (
+            <div className="rounded-2xl border border-white/[0.08] bg-zinc-900 p-5">
+              <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-3">Current Holdings</p>
+              <div className="space-y-1">
+                {holdings.map(h => (
+                  <div key={h.symbol} className="flex items-center justify-between py-1.5 border-b border-white/[0.04] last:border-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-white text-sm">{h.label}</span>
+                      <span className="text-[10px] text-zinc-600 uppercase">{h.market}</span>
+                    </div>
+                    <span className="font-mono text-sm text-emerald-400 font-semibold">
+                      {h.quantity % 1 === 0 ? h.quantity : h.quantity.toFixed(4)} shares
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           </div>
 
           {/* ── Order Tables ── */}
