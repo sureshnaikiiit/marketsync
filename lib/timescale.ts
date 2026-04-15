@@ -4,8 +4,8 @@ import { Pool } from 'pg';
 const globalForTs = globalThis as unknown as { tsPool?: Pool };
 
 function createPool() {
-  const url = process.env.TIMESCALE_URL;
-  if (!url) throw new Error('TIMESCALE_URL environment variable is not set');
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error('DATABASE_URL environment variable is not set');
   return new Pool({
     connectionString: url,
     ssl: { rejectUnauthorized: false },
