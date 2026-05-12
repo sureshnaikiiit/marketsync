@@ -119,6 +119,7 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? 'Login failed'); return; }
+
       setSuccess(true);
       setTimeout(() => { router.push('/india'); router.refresh(); }, 1400);
     } finally {
